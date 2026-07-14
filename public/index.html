@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#082842" />
+    <title>VaultKeep — Bunker digital de arquivos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+
+    <section class="login-view" id="loginView">
+      <div class="login-glow"></div>
+      <div class="login-card">
+        <a class="brand" href="#" aria-label="VaultKeep">
+          <span class="brand-mark"><span></span></span>
+          <span class="brand-name">VAULT<span>KEEP</span></span>
+        </a>
+        <div class="login-copy">
+          <p class="eyebrow">PROTOCOLO DE ACESSO // VK-01</p>
+          <h1>Seus arquivos.<br /><em>Protegidos no bunker.</em></h1>
+          <p>
+            Um abrigo digital privado para tudo o que precisa sobreviver ao
+            tempo.
+          </p>
+        </div>
+        <form id="loginForm" class="login-form">
+          <label for="password">Senha de acesso</label>
+          <div class="password-field">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              class="icon-button"
+              id="togglePassword"
+              aria-label="Mostrar senha"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                />
+                <circle cx="12" cy="12" r="2.5" />
+              </svg>
+            </button>
+          </div>
+          <p class="form-error" id="loginError" role="alert"></p>
+          <button class="primary-button" type="submit">
+            <span>Destravar o bunker</span><span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <p class="login-footnote"><span></span> Canal seguro estabelecido</p>
+      </div>
+      <aside class="login-art" aria-hidden="true">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="floating-card card-a">
+          <span class="mini-icon">ISO</span>
+          <div><b>arquivo_01.iso</b><small>Preservado no bunker</small></div>
+        </div>
+        <div class="floating-card card-b">
+          <span class="status-dot"></span>
+          <div><b>Bunker online</b><small>Sistemas operacionais</small></div>
+        </div>
+        <p class="art-quote">“Preparado para o amanhã.<br />Protegido hoje.”</p>
+      </aside>
+    </section>
+
+    <div class="app-view hidden" id="appView">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="VaultKeep"
+          ><span class="brand-mark"><span></span></span
+          ><span class="brand-name">VAULT<span>KEEP</span></span></a
+        >
+        <nav>
+          <button class="nav-item active">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"
+              /></svg
+            ><span>Visão geral</span>
+          </button>
+          <button class="nav-item" id="navFiles">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
+              /></svg
+            ><span>Meus arquivos</span>
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="server-status">
+            <span></span>
+            <div><b>Bunker online</b><small>Operando normalmente</small></div>
+          </div>
+          <button class="nav-item" id="logoutButton">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5m5-4 4-4-4-4m4 4H9"
+              /></svg
+            ><span>Sair</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menu">
+            ☰
+          </button>
+          <div>
+            <p class="eyebrow">TERMINAL DO OPERADOR</p>
+            <h2>Bunker de arquivos</h2>
+          </div>
+          <button class="upload-button" id="uploadButton">
+            <span>＋</span> Novo upload
+          </button>
+        </header>
+
+        <section class="dashboard">
+          <div class="hero-panel">
+            <div>
+              <p class="eyebrow">VAULTKEEP STORAGE SYSTEM // VK-01</p>
+              <h1>Seu acervo.<br /><em>Seguro no bunker.</em></h1>
+              <p>
+                Deposite, preserve e recupere seus arquivos através de um canal
+                privado.
+              </p>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <div class="hero-ring"></div>
+              <div class="hero-folder"><span></span></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-icon green"
+                ><svg viewBox="0 0 24 24">
+                  <path
+                    d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
+                  /></svg
+              ></span>
+              <div>
+                <small>ARQUIVOS NO BUNKER</small
+                ><strong id="fileCount">0</strong>
+                <p>Itens preservados</p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon yellow"
+                ><svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" /></svg
+              ></span>
+              <div>
+                <small>CAPACIDADE OCUPADA</small
+                ><strong id="spaceUsed">0 B</strong>
+                <p>No armazenamento local</p>
+              </div>
+            </article>
+          </div>
+
+          <section class="files-section" id="filesSection">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">ARQUIVO CENTRAL</p>
+                <h3>Registros armazenados</h3>
+              </div>
+              <div class="search-box">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" /></svg
+                ><input
+                  type="search"
+                  id="searchInput"
+                  placeholder="Buscar arquivo..."
+                />
+              </div>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <div class="empty-state hidden" id="emptyState">
+              <div class="empty-icon">⌁</div>
+              <h4>Nenhum arquivo por aqui</h4>
+              <p>Faça seu primeiro upload para começar.</p>
+              <button class="text-button" id="emptyUpload">
+                Enviar arquivo
+              </button>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div
+      class="modal hidden"
+      id="uploadModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="uploadTitle"
+    >
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close-modal aria-label="Fechar">
+          ×
+        </button>
+        <p class="eyebrow">TRANSFERÊNCIA SEGURA</p>
+        <h3 id="uploadTitle">Depositar no bunker</h3>
+        <p>
+          Arquivos grandes são divididos, verificados e podem continuar do ponto
+          em que pararam.
+        </p>
+        <form id="uploadForm">
+          <label class="drop-zone" id="dropZone" for="fileInput">
+            <input
+              id="fileInput"
+              name="files"
+              type="file"
+              accept=".zip,.rar,.7z,.iso"
+              multiple
+              hidden
+            />
+            <span class="drop-icon">↑</span><b>Arraste seus arquivos aqui</b
+            ><small
+              >ou clique para procurar · ZIP, RAR, 7Z ou ISO · até 10 por
+              vez</small
+            >
+          </label>
+          <div class="selected-files" id="selectedFiles"></div>
+          <div class="upload-progress hidden" id="uploadProgress">
+            <span></span>
+          </div>
+          <p class="form-error" id="uploadError" role="alert"></p>
+          <button
+            class="primary-button"
+            id="submitUpload"
+            type="submit"
+            disabled
+          >
+            <span>Fazer upload</span><span aria-hidden="true">↑</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status">
+      <span>✓</span>
+      <p></p>
+    </div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+.env
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/files.json
+storage/chunks/*
+!storage/chunks/.gitkeep
+npm-debug.log*
+test-storage-tmp/
+.test-large.iso

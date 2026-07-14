@@ -1,0 +1,20 @@
+{
+  "name": "vaultkeep",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gerenciador pessoal de arquivos com upload e download individual.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "local": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node scripts/integration-test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "helmet": "^8.1.0"
+  }
+}
