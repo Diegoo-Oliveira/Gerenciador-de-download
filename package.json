@@ -2,19 +2,42 @@
   "name": "vaultkeep",
   "version": "1.0.0",
   "private": true,
-  "description": "Gerenciador pessoal de arquivos com upload e download individual.",
+  "description": "Bunker pessoal com biblioteca pública, autenticação e upload retomável.",
   "main": "server.js",
   "scripts": {
     "start": "node scripts/start.js",
     "local": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node scripts/integration-test.js"
+    "test": "node scripts/integration-test.js",
+    "samples:export": "node scripts/generate-export-samples.js",
+    "password:hash": "node scripts/hash-password.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
+    "busboy": "^1.6.0",
+    "cheerio": "^1.1.2",
+    "codemirror": "^5.65.21",
+    "csv-parse": "^6.1.0",
+    "csv-stringify": "^6.6.0",
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
-    "helmet": "^8.1.0"
+    "fast-xml-parser": "^5.10.0",
+    "helmet": "^8.1.0",
+    "highlight.js": "^11.11.1",
+    "mammoth": "^1.11.0",
+    "pdfjs-dist": "^6.1.200",
+    "pdfkit": "^0.17.2",
+    "sharp": "^0.35.3",
+    "yaml": "^2.9.0",
+    "yauzl": "^3.2.0"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
   }
 }

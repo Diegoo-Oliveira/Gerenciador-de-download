@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#082842" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Editor — VaultKeep</title>
+    <link rel="stylesheet" href="/vendor/codemirror/lib/codemirror.css" />
+    <link rel="stylesheet" href="/editor.css" />
+  </head>
+  <body>
+    <div class="editor-page-grid" aria-hidden="true"></div>
+    <header class="editor-topbar">
+      <a
+        class="editor-brand"
+        id="editorBackLink"
+        href="/admin"
+        aria-label="Voltar ao VaultKeep"
+      >
+        <span class="editor-brand-mark"><span></span></span>
+        <span class="editor-brand-name">VAULT<span>KEEP</span></span>
+      </a>
+      <div class="editor-document-title">
+        <p>EDITOR AUTENTICADO // VK-01</p>
+        <h1 id="editorTitle">Novo arquivo de texto</h1>
+      </div>
+      <div class="editor-session">
+        <span></span>
+        <div>
+          <b id="editorOperator">Sessão protegida</b
+          ><small>Validação pelo backend</small>
+        </div>
+      </div>
+    </header>
+
+    <main class="editor-workspace">
+      <section class="document-toolbar">
+        <label class="filename-field" for="editorFileName">
+          <span>Nome do arquivo</span>
+          <input
+            id="editorFileName"
+            maxlength="255"
+            placeholder="notas.md"
+            autocomplete="off"
+          />
+        </label>
+        <div class="language-panel">
+          <span class="language-indicator"></span>
+          <div>
+            <small>Linguagem detectada</small
+            ><b id="editorLanguage">Texto simples</b>
+          </div>
+          <span class="language-code" id="editorLanguageCode">TXT</span>
+        </div>
+      </section>
+
+      <section class="editor-surface" aria-label="Conteúdo do arquivo">
+        <textarea id="editorTextarea"></textarea>
+      </section>
+
+      <footer class="editor-statusbar">
+        <div class="document-status">
+          <span id="editorEncoding">UTF-8</span>
+          <span id="editorSize">0 B</span>
+          <span id="editorSaveState">Sem alterações</span>
+        </div>
+
+        <label class="editor-visibility">
+          <input id="editorPublic" type="checkbox" />
+          <span class="editor-switch"></span>
+          <span
+            ><b>Arquivo público</b
+            ><small
+              >Disponível para download se a pasta também for pública</small
+            ></span
+          >
+        </label>
+
+        <p class="editor-error" id="editorError" role="alert"></p>
+        <div class="editor-actions">
+          <button class="cancel-button" id="cancelEditorButton" type="button">
+            Cancelar
+          </button>
+          <button class="save-button" id="saveEditorButton" type="button">
+            <span>Salvar arquivo</span><span>✓</span>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+    <div class="editor-loading" id="editorLoading">
+      <span></span>
+      <b>Preparando editor seguro...</b>
+    </div>
+
+    <div class="editor-toast hidden" id="editorToast" role="status">
+      <span>✓</span>
+      <p>Arquivo salvo.</p>
+    </div>
+
+    <script src="/vendor/codemirror/lib/codemirror.js" defer></script>
+    <script src="/vendor/codemirror/addon/mode/overlay.js" defer></script>
+    <script src="/vendor/codemirror/addon/mode/simple.js" defer></script>
+    <script src="/vendor/codemirror/mode/xml/xml.js" defer></script>
+    <script
+      src="/vendor/codemirror/mode/javascript/javascript.js"
+      defer
+    ></script>
+    <script src="/vendor/codemirror/mode/css/css.js" defer></script>
+    <script src="/vendor/codemirror/mode/htmlmixed/htmlmixed.js" defer></script>
+    <script src="/vendor/codemirror/mode/markdown/markdown.js" defer></script>
+    <script src="/vendor/codemirror/mode/gfm/gfm.js" defer></script>
+    <script src="/vendor/codemirror/mode/shell/shell.js" defer></script>
+    <script
+      src="/vendor/codemirror/mode/powershell/powershell.js"
+      defer
+    ></script>
+    <script src="/vendor/codemirror/mode/python/python.js" defer></script>
+    <script src="/vendor/codemirror/mode/clike/clike.js" defer></script>
+    <script src="/vendor/codemirror/mode/sql/sql.js" defer></script>
+    <script src="/vendor/codemirror/mode/yaml/yaml.js" defer></script>
+    <script src="/vendor/codemirror/mode/toml/toml.js" defer></script>
+    <script
+      src="/vendor/codemirror/mode/properties/properties.js"
+      defer
+    ></script>
+    <script
+      src="/vendor/codemirror/mode/dockerfile/dockerfile.js"
+      defer
+    ></script>
+    <script src="/vendor/codemirror/mode/php/php.js" defer></script>
+    <script src="/vendor/codemirror/mode/ruby/ruby.js" defer></script>
+    <script src="/vendor/codemirror/mode/go/go.js" defer></script>
+    <script src="/vendor/codemirror/mode/rust/rust.js" defer></script>
+    <script src="/vendor/codemirror/mode/lua/lua.js" defer></script>
+    <script src="/vendor/codemirror/mode/r/r.js" defer></script>
+    <script src="/vendor/codemirror/mode/perl/perl.js" defer></script>
+    <script src="/editor.js" defer></script>
+  </body>
+</html>

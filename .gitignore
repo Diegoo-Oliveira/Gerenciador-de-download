@@ -3,6 +3,7 @@ node_modules/
 storage/uploads/*
 !storage/uploads/.gitkeep
 storage/files.json
+storage/users.json
 storage/chunks/*
 !storage/chunks/.gitkeep
 npm-debug.log*

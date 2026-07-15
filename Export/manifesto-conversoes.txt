@@ -1,0 +1,28 @@
+VAULTKEEP // MANIFESTO DO TESTE DE CONVERSÃO
+Servidor testado: http://127.0.0.1:3190
+Gerado em: 2026-07-15T19:07:59.986Z
+
+Arquivo | Bytes | SHA-256
+imagem-original.png | 20576 | e95a1fc534878d85002118dc97f643744140a43fb7bb628ae5a13af53cb34365
+texto-original.txt | 333 | 4da49d3f534934ffd05e243d0dea7be7ffdb74ba532a8521c13f7048b6990a37
+imagem-convertida.jpg | 21402 | 9ef7cf1da3b53ee0bda916ebc420be061ca43c8597a3ada6b1e5984e1549cdc8
+imagem-convertida.png | 20576 | e95a1fc534878d85002118dc97f643744140a43fb7bb628ae5a13af53cb34365
+imagem-convertida.webp | 12862 | 65faa99c3534a5d5bd82639f1827a8c584482b5c2d3e441fed586dd006bd6857
+imagem-convertida.avif | 9529 | 7dd23d8cb9e8cfffe664a3f286c7f5f56683c53c124e75aa3da51d519916ec09
+imagem-convertida.tif | 37692 | 44733f1186191d798598b490955e03481a1a39930a3bff3c2de7ecd9c84aef7b
+imagem-convertida.gif | 12951 | 657dd7608229e305830a67179eda3ea2c4ff536a9e7517a5dc9ba4f760d9d7c7
+imagem-convertida.svg | 27630 | a8bea1ec334ed9e533fc310444df22398569f10cfd8c906958b0dadb9a01b0df
+imagem-sem-fundo.png | 20898 | 3b73e4d369f920ed09eaaa9a62a1f48e77ed73dc18ba8e9bd8f3af4678bddcf8
+texto-convertido.docx | 8898 | 9e60fdcddd47ee7ba72f62bcc291cfd541850da79258768227900ad980f4501d
+texto-convertido.pdf | 2074 | dd7ff047fbb0b094abcbc903cf63a68a592082bf20de9bdf75fda8b107f91ea9
+texto-convertido.md | 370 | 0382e2b611c54bfb4912a0f712e45af9ecb0bea4bf159da1930246f29366588a
+texto-convertido.html | 1024 | 320a82941d7818426bb81944efb0cf027085f0b1df0f243c89a894c2625a8d00
+texto-convertido.rtf | 557 | b1c8b6759efb8379096a4b1f7505fbd5ee501bb5bc6c58ef888005f8a45e44c1
+texto-convertido.xlsx | 6999 | c697194efdde451b927dbd7441494b3aac40802bc071eb1d2118c16bca9ee194
+texto-convertido.csv | 382 | 6884cac3d39c68128d2df47e87fda7b0d686d4a17b22933e8cdf35f53a622163
+texto-convertido.tsv | 380 | a510f6d368a447e8cf09f4693fe55341d27562de6462a908b19a05d13b964ea1
+texto-convertido.json | 1018 | 5bcd0bb1fda2f3c3be1ab21a47204a3b9b138516960278d93b5c02799ccf8c59
+texto-convertido.xml | 1382 | 9ed407edc734235bff04ff877fc22db6723c0ea7dd998d45b0a29cf2ac634226
+texto-convertido.yaml | 709 | 432e5ef3f40a0cdfa2416ff5690e53129cf7c9b964959b91881ae82db24b0fde
+
+Total: 21 arquivos de conteúdo + este manifesto.

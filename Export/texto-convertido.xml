@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vaultkeep>
+  <source>
+    <name>texto-original.txt</name>
+    <format>txt</format>
+  </source>
+  <sheets>
+    <sheet>
+      <name>Texto</name>
+      <rows>
+        <row>
+          <cell>Linha</cell>
+          <cell>Texto</cell>
+        </row>
+        <row>
+          <cell>1</cell>
+          <cell>VAULTKEEP // TESTE DE CONVERSÃO</cell>
+        </row>
+        <row>
+          <cell>2</cell>
+          <cell></cell>
+        </row>
+        <row>
+          <cell>3</cell>
+          <cell>Este arquivo valida acentuação: ação, proteção, usuário e informação.</cell>
+        </row>
+        <row>
+          <cell>4</cell>
+          <cell>Ele também verifica múltiplas linhas e símbolos: &lt; &gt; &amp; &quot; &apos;.</cell>
+        </row>
+        <row>
+          <cell>5</cell>
+          <cell></cell>
+        </row>
+        <row>
+          <cell>6</cell>
+          <cell>Trecho PowerShell:</cell>
+        </row>
+        <row>
+          <cell>7</cell>
+          <cell>Get-Process | Sort-Object CPU -Descending | Select-Object -First 5</cell>
+        </row>
+        <row>
+          <cell>8</cell>
+          <cell></cell>
+        </row>
+        <row>
+          <cell>9</cell>
+          <cell>Status esperado: conteúdo preservado e saída somente para download.</cell>
+        </row>
+      </rows>
+    </sheet>
+  </sheets>
+</vaultkeep>

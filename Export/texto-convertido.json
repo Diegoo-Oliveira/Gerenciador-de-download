@@ -1,0 +1,55 @@
+{
+  "schema": "vaultkeep-conversion/v1",
+  "source": {
+    "name": "texto-original.txt",
+    "format": "txt"
+  },
+  "sheets": [
+    {
+      "name": "Texto",
+      "rows": [
+        [
+          "Linha",
+          "Texto"
+        ],
+        [
+          1,
+          "VAULTKEEP // TESTE DE CONVERSÃO"
+        ],
+        [
+          2,
+          ""
+        ],
+        [
+          3,
+          "Este arquivo valida acentuação: ação, proteção, usuário e informação."
+        ],
+        [
+          4,
+          "Ele também verifica múltiplas linhas e símbolos: < > & \" '."
+        ],
+        [
+          5,
+          ""
+        ],
+        [
+          6,
+          "Trecho PowerShell:"
+        ],
+        [
+          7,
+          "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5"
+        ],
+        [
+          8,
+          ""
+        ],
+        [
+          9,
+          "Status esperado: conteúdo preservado e saída somente para download."
+        ]
+      ],
+      "merges": []
+    }
+  ]
+}

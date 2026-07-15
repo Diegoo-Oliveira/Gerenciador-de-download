@@ -4,22 +4,180 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#082842" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>VaultKeep — Bunker digital de arquivos</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/public-header.css?v=4" />
   </head>
   <body>
     <div class="grain"></div>
 
-    <section class="login-view" id="loginView">
+    <section class="guest-home" id="guestHome">
+      <header class="guest-header public-site-header">
+        <a class="brand public-site-brand" href="/" aria-label="VaultKeep">
+          <span class="brand-mark public-site-brand-mark"><span></span></span>
+          <span class="brand-name public-site-brand-name">VAULT<span>KEEP</span></span>
+        </a>
+        <nav class="guest-nav public-site-nav" aria-label="Ferramentas">
+          <a class="active" href="#publicLibrarySection">Arquivos</a>
+          <a href="/tools/pdf">Conversor de PDF</a>
+          <a href="/tools/images">Conversor de imagem</a>
+          <a href="/tools/passwords">Gerador de senha</a>
+        </nav>
+        <div class="guest-account public-site-account">
+          <span class="guest-user public-site-user hidden" id="guestUser"></span>
+          <button class="guest-login public-site-account-action" id="homeLoginButton" type="button">
+            Login <span class="public-site-action-arrow">↗</span>
+          </button>
+          <button class="guest-login public-site-account-action hidden" id="homeAdminButton" type="button">
+            Administrar <span class="public-site-action-arrow">→</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="guest-main">
+        <section class="guest-hero">
+          <div>
+            <p class="eyebrow">VAULTKEEP PUBLIC ARCHIVE // VK-01</p>
+            <h1>Arquivos liberados.<br /><em>Preservados no bunker.</em></h1>
+            <p>
+              Consulte e baixe os registros que o operador disponibilizou ao
+              público. Alterações continuam restritas à área autenticada.
+            </p>
+            <a
+              class="primary-button guest-hero-button"
+              href="#publicLibrarySection"
+            >
+              <span>Explorar arquivos</span><span>↓</span>
+            </a>
+          </div>
+          <div class="public-orbit" aria-hidden="true">
+            <span class="orbit-line orbit-line-one"></span>
+            <span class="orbit-line orbit-line-two"></span>
+            <div class="public-vault-icon"><span>↓</span></div>
+          </div>
+        </section>
+
+        <section class="public-library" id="publicLibrarySection">
+          <div class="public-library-heading">
+            <div>
+              <p class="eyebrow">ARQUIVO PÚBLICO</p>
+              <h2>Disponível para download</h2>
+              <p>Somente itens marcados como públicos aparecem nesta área.</p>
+            </div>
+            <label class="public-search">
+              <span>⌕</span>
+              <input
+                id="publicSearchInput"
+                type="search"
+                placeholder="Buscar arquivo..."
+              />
+            </label>
+          </div>
+          <nav
+            class="public-breadcrumbs"
+            id="publicBreadcrumbs"
+            aria-label="Pasta pública atual"
+          ></nav>
+          <p
+            class="public-library-error"
+            id="publicLibraryError"
+            role="alert"
+          ></p>
+          <div class="public-library-grid" id="publicLibraryList"></div>
+          <div class="public-library-empty hidden" id="publicLibraryEmpty">
+            <span>⌁</span>
+            <h3>Nenhum arquivo público por aqui</h3>
+            <p>
+              Quando o operador liberar um arquivo, ele aparecerá nesta área.
+            </p>
+          </div>
+        </section>
+      </main>
+      <footer class="guest-footer">
+        <span>VAULTKEEP // ACESSO SOMENTE LEITURA</span>
+      </footer>
+    </section>
+
+    <div
+      class="modal public-preview-modal hidden"
+      id="publicPreviewModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="publicPreviewTitle"
+      aria-describedby="publicPreviewMeta"
+    >
+      <div class="modal-backdrop" data-close="publicPreview"></div>
+      <article class="modal-card public-preview-card">
+        <header class="public-preview-heading">
+          <div>
+            <p class="eyebrow">VISUALIZAÇÃO PÚBLICA // SOMENTE LEITURA</p>
+            <h2 id="publicPreviewTitle">Carregando arquivo...</h2>
+            <p id="publicPreviewMeta">Validando o conteúdo no bunker.</p>
+          </div>
+          <div class="public-preview-heading-actions">
+            <a
+              class="public-preview-download"
+              id="publicPreviewDownload"
+              href="#"
+            >
+              Baixar <span aria-hidden="true">↓</span>
+            </a>
+            <button
+              class="modal-close public-preview-close"
+              id="publicPreviewClose"
+              data-close="publicPreview"
+              type="button"
+              aria-label="Fechar visualização"
+            >
+              ×
+            </button>
+          </div>
+        </header>
+        <p
+          class="public-preview-status"
+          id="publicPreviewStatus"
+          role="status"
+          aria-live="polite"
+        ></p>
+        <pre
+          class="public-preview-code"
+          id="publicPreviewCode"
+          tabindex="0"
+          aria-label="Conteúdo do arquivo em modo somente leitura"
+        ><code id="publicPreviewContent"></code></pre>
+      </article>
+    </div>
+
+    <section class="public-view hidden" id="publicView">
+      <div class="public-shell">
+        <a class="brand" href="/" aria-label="VaultKeep">
+          <span class="brand-mark"><span></span></span>
+          <span class="brand-name">VAULT<span>KEEP</span></span>
+        </a>
+        <article class="public-card">
+          <p class="eyebrow">ACESSO PÚBLICO // SOMENTE LEITURA</p>
+          <div class="public-file-icon">↓</div>
+          <h1 id="publicFileName">Consultando arquivo...</h1>
+          <p id="publicFileMeta">Aguarde enquanto validamos o link.</p>
+          <p class="form-error" id="publicError" role="alert"></p>
+          <a
+            class="primary-button public-download hidden"
+            id="publicDownload"
+            href="#"
+          >
+            <span>Baixar arquivo</span><span aria-hidden="true">↓</span>
+          </a>
+          <a class="public-private-link" href="/">Ver arquivos públicos</a>
+        </article>
+        <p class="public-footnote">VK-01 · Link protegido contra alterações</p>
+      </div>
+    </section>
+
+    <section class="login-view hidden" id="loginView">
       <div class="login-glow"></div>
       <div class="login-card">
-        <a class="brand" href="#" aria-label="VaultKeep">
+        <a class="brand" href="/" aria-label="VaultKeep">
           <span class="brand-mark"><span></span></span>
           <span class="brand-name">VAULT<span>KEEP</span></span>
         </a>
@@ -32,6 +190,17 @@
           </p>
         </div>
         <form id="loginForm" class="login-form">
+          <label for="username">Usuário</label>
+          <input
+            class="login-text-field"
+            id="username"
+            name="username"
+            type="text"
+            placeholder="Digite seu usuário"
+            autocomplete="username"
+            maxlength="64"
+            required
+          />
           <label for="password">Senha de acesso</label>
           <div class="password-field">
             <input
@@ -60,8 +229,11 @@
           <button class="primary-button" type="submit">
             <span>Destravar o bunker</span><span aria-hidden="true">↗</span>
           </button>
+          <a class="back-public-link" href="/"
+            >← Voltar aos arquivos públicos</a
+          >
         </form>
-        <p class="login-footnote"><span></span> Canal seguro estabelecido</p>
+        <p class="login-footnote"><span></span> Sessão validada pelo backend</p>
       </div>
       <aside class="login-art" aria-hidden="true">
         <div class="orbit orbit-one"></div>
@@ -80,7 +252,7 @@
 
     <div class="app-view hidden" id="appView">
       <aside class="sidebar">
-        <a class="brand" href="#" aria-label="VaultKeep"
+        <a class="brand" href="/" aria-label="VaultKeep"
           ><span class="brand-mark"><span></span></span
           ><span class="brand-name">VAULT<span>KEEP</span></span></a
         >
@@ -99,12 +271,18 @@
               /></svg
             ><span>Meus arquivos</span>
           </button>
+          <button class="nav-item" id="viewPublicSite">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 4h16v12H4zM8 20h8m-4-4v4" /></svg
+            ><span>Ver site público</span>
+          </button>
         </nav>
         <div class="sidebar-bottom">
           <div class="server-status">
             <span></span>
             <div><b>Bunker online</b><small>Operando normalmente</small></div>
           </div>
+          <p class="operator-name" id="operatorName">Operador</p>
           <button class="nav-item" id="logoutButton">
             <svg viewBox="0 0 24 24">
               <path
@@ -124,9 +302,17 @@
             <p class="eyebrow">TERMINAL DO OPERADOR</p>
             <h2>Bunker de arquivos</h2>
           </div>
-          <button class="upload-button" id="uploadButton">
-            <span>＋</span> Novo upload
-          </button>
+          <div class="topbar-actions">
+            <button class="utility-button" id="newFolderButton">
+              <span>＋</span> Pasta
+            </button>
+            <button class="utility-button" id="newTextButton">
+              <span>＋</span> Texto
+            </button>
+            <button class="upload-button" id="uploadButton">
+              <span>＋</span> Upload
+            </button>
+          </div>
         </header>
 
         <section class="dashboard">
@@ -174,10 +360,22 @@
           </div>
 
           <section class="files-section" id="filesSection">
+            <nav
+              class="breadcrumbs"
+              id="breadcrumbs"
+              aria-label="Caminho atual"
+            ></nav>
+            <div class="public-context-notice hidden" id="publicContextNotice">
+              <span>!</span>
+              <p>
+                Esta pasta está visível no site público. Somente os itens também
+                marcados como públicos serão exibidos nela.
+              </p>
+            </div>
             <div class="section-heading">
               <div>
                 <p class="eyebrow">ARQUIVO CENTRAL</p>
-                <h3>Registros armazenados</h3>
+                <h3 id="currentFolderName">Registros armazenados</h3>
               </div>
               <div class="search-box">
                 <svg viewBox="0 0 24 24">
@@ -211,9 +409,9 @@
       aria-modal="true"
       aria-labelledby="uploadTitle"
     >
-      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-backdrop" data-close="upload"></div>
       <div class="modal-card">
-        <button class="modal-close" data-close-modal aria-label="Fechar">
+        <button class="modal-close" data-close="upload" aria-label="Fechar">
           ×
         </button>
         <p class="eyebrow">TRANSFERÊNCIA SEGURA</p>
@@ -224,17 +422,10 @@
         </p>
         <form id="uploadForm">
           <label class="drop-zone" id="dropZone" for="fileInput">
-            <input
-              id="fileInput"
-              name="files"
-              type="file"
-              accept=".zip,.rar,.7z,.iso"
-              multiple
-              hidden
-            />
+            <input id="fileInput" name="files" type="file" multiple hidden />
             <span class="drop-icon">↑</span><b>Arraste seus arquivos aqui</b
             ><small
-              >ou clique para procurar · ZIP, RAR, 7Z ou ISO · até 10 por
+              >ou clique para procurar · arquivos, textos e códigos · até 10 por
               vez</small
             >
           </label>
@@ -242,6 +433,17 @@
           <div class="upload-progress hidden" id="uploadProgress">
             <span></span>
           </div>
+          <label class="visibility-control">
+            <input id="uploadPublic" type="checkbox" />
+            <span class="visibility-switch"></span>
+            <span
+              ><b>Publicar após o upload</b
+              ><small
+                >Visitantes poderão baixar estes arquivos se a pasta atual
+                também for pública.</small
+              ></span
+            >
+          </label>
           <p class="form-error" id="uploadError" role="alert"></p>
           <button
             class="primary-button"
@@ -252,6 +454,118 @@
             <span>Fazer upload</span><span aria-hidden="true">↑</span>
           </button>
         </form>
+      </div>
+    </div>
+
+    <div
+      class="modal hidden"
+      id="folderModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="folderTitle"
+    >
+      <div class="modal-backdrop" data-close="folder"></div>
+      <div class="modal-card compact-modal">
+        <button class="modal-close" data-close="folder" aria-label="Fechar">
+          ×
+        </button>
+        <p class="eyebrow">ORGANIZAÇÃO DO BUNKER</p>
+        <h3 id="folderTitle">Criar nova pasta</h3>
+        <p>A pasta será criada no local que está aberto agora.</p>
+        <form id="folderForm">
+          <label class="field-label" for="folderName">Nome da pasta</label>
+          <input
+            class="text-field"
+            id="folderName"
+            maxlength="100"
+            placeholder="Ex.: Sistemas operacionais"
+            required
+          />
+          <label class="visibility-control compact-control">
+            <input id="folderPublic" type="checkbox" />
+            <span class="visibility-switch"></span>
+            <span
+              ><b>Pasta pública</b
+              ><small
+                >Libera a navegação; cada arquivo ainda precisa ser
+                publicado.</small
+              ></span
+            >
+          </label>
+          <p class="form-error" id="folderError" role="alert"></p>
+          <button class="primary-button" type="submit">
+            <span>Criar pasta</span><span>＋</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div
+      class="modal hidden"
+      id="moveModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="moveTitle"
+    >
+      <div class="modal-backdrop" data-close="move"></div>
+      <div class="modal-card compact-modal">
+        <button class="modal-close" data-close="move" aria-label="Fechar">
+          ×
+        </button>
+        <p class="eyebrow">REALOCAÇÃO DE REGISTRO</p>
+        <h3 id="moveTitle">Mover arquivo</h3>
+        <p id="moveFileName"></p>
+        <label class="field-label" for="moveDestination"
+          >Pasta de destino</label
+        >
+        <select class="text-field" id="moveDestination"></select>
+        <p class="form-error" id="moveError" role="alert"></p>
+        <button class="primary-button" id="confirmMoveButton" type="button">
+          <span>Mover arquivo</span><span>→</span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="modal hidden"
+      id="shareModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shareTitle"
+    >
+      <div class="modal-backdrop" data-close="share"></div>
+      <div class="modal-card compact-modal">
+        <button class="modal-close" data-close="share" aria-label="Fechar">
+          ×
+        </button>
+        <p class="eyebrow">LINK PÚBLICO // SOMENTE DOWNLOAD</p>
+        <h3 id="shareTitle">Compartilhar arquivo</h3>
+        <p>
+          Quem possuir este link poderá baixar o arquivo, mas não editar nem
+          acessar o restante do bunker.
+        </p>
+        <label class="field-label" for="shareUrl">Endereço público</label>
+        <div class="copy-field">
+          <input class="text-field" id="shareUrl" readonly /><button
+            id="copyShareButton"
+            type="button"
+          >
+            Copiar
+          </button>
+        </div>
+        <p class="form-error" id="shareError" role="alert"></p>
+        <div class="share-actions">
+          <button class="danger-button" id="revokeShareButton" type="button">
+            Desativar link
+          </button>
+          <button
+            class="primary-button save-button"
+            id="createShareButton"
+            type="button"
+          >
+            <span>Criar link público</span><span>↗</span>
+          </button>
+        </div>
       </div>
     </div>
 

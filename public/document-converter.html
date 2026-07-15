@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#082842" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Conversor de PDF e documentos — VaultKeep</title>
+    <link rel="stylesheet" href="/converter.css" />
+    <link rel="stylesheet" href="/public-header.css?v=4" />
+  </head>
+  <body>
+    <div class="tool-grid" aria-hidden="true"></div>
+    <header class="tool-header public-site-header">
+      <a class="tool-brand public-site-brand" href="/" aria-label="VaultKeep">
+        <span class="tool-brand-mark public-site-brand-mark"><span></span></span>
+        <span class="tool-brand-name public-site-brand-name">VAULT<span>KEEP</span></span>
+      </a>
+      <nav class="tool-nav public-site-nav" aria-label="Ferramentas públicas">
+        <a href="/">Arquivos</a>
+        <a class="active" href="/tools/pdf">Conversor de PDF</a>
+        <a href="/tools/images">Conversor de imagem</a>
+        <a href="/tools/passwords">Gerador de senha</a>
+      </nav>
+      <div class="tool-account public-site-account">
+        <span class="tool-user public-site-user hidden" id="toolSessionUser"></span>
+        <a class="tool-login public-site-account-action" id="toolSessionAction" href="/login">
+          <span id="toolSessionLabel">Login</span><span class="public-site-action-arrow" id="toolSessionArrow">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="tool-main">
+      <section class="tool-intro">
+        <div>
+          <p class="tool-eyebrow">VAULTKEEP DOCUMENT LAB // DOC-01</p>
+          <h1>Transforme documentos.<br /><em>Preserve a estrutura.</em></h1>
+          <p>
+            Converta PDF, Word, planilhas, dados estruturados e arquivos de texto
+            sem cadastrar o documento no bunker. Conteúdo, abas, linhas, colunas
+            e tipos são mantidos sempre que o formato de destino permitir.
+          </p>
+        </div>
+        <div class="format-orbit" aria-hidden="true">
+          <span>PDF</span><span>DOCX</span><span>MD</span><b>⇄</b>
+        </div>
+      </section>
+
+      <section class="converter-layout">
+        <form class="converter-card" id="documentForm">
+          <div class="converter-heading">
+            <div><span>01</span><div><small>ENTRADA</small><h2>Selecione o documento</h2></div></div>
+            <b id="documentLimit">Até 10 MB</b>
+          </div>
+
+          <label class="converter-drop" id="documentDrop" for="documentFile">
+            <input
+              id="documentFile"
+              name="file"
+              type="file"
+              accept=".pdf,.docx,.xlsx,.csv,.tsv,.json,.xml,.yaml,.yml,.html,.htm,.txt,.md"
+              required
+            />
+            <span class="drop-symbol">＋</span>
+            <strong>Solte o documento nesta área</strong>
+            <small>ou clique para procurar · PDF, DOCX, planilhas, dados e texto</small>
+          </label>
+
+          <div class="selected-tool-file hidden" id="documentSelected">
+            <span id="documentFileType">DOC</span>
+            <div><b id="documentFileName"></b><small id="documentFileMeta"></small></div>
+            <button id="clearDocument" type="button" aria-label="Remover arquivo">×</button>
+          </div>
+
+          <div class="conversion-options">
+            <label>
+              <span>02 · Formato de saída</span>
+              <select id="documentTarget" name="target" required disabled>
+                <option value="">Selecione após enviar o arquivo</option>
+              </select>
+            </label>
+            <div class="structure-notice" id="structureNotice">
+              <span>◎</span>
+              <p><b>Conversão estrutural</b><small>Planilhas e JSON são interpretados no backend, não tratados como texto bruto.</small></p>
+            </div>
+          </div>
+
+          <p class="tool-error" id="documentError" role="alert"></p>
+          <button class="convert-button" id="documentSubmit" type="submit" disabled>
+            <span>Converter documento</span><span>→</span>
+          </button>
+          <div class="conversion-progress hidden" id="documentProgress">
+            <span></span><p><b>Processando no bunker...</b><small>Não feche esta página.</small></p>
+          </div>
+          <div class="conversion-result hidden" id="documentResult">
+            <span>✓</span>
+            <div><b>Conversão concluída</b><small id="documentResultMeta"></small></div>
+            <a id="documentDownload" href="#">Baixar arquivo ↓</a>
+          </div>
+        </form>
+
+        <aside class="tool-information">
+          <article>
+            <p class="tool-eyebrow">MATRIZ DE CONVERSÃO</p>
+            <h3>Formatos disponíveis</h3>
+            <div class="format-list">
+              <span><b>PDF / DOCX</b><small>→ DOCX, PDF, MD, TXT, HTML, RTF e dados</small></span>
+              <span><b>XLSX / CSV / TSV</b><small>→ DOCX, PDF, JSON, XML, YAML e texto</small></span>
+              <span><b>JSON / XML / YAML</b><small>→ planilhas, Word, PDF, HTML e texto</small></span>
+              <span><b>TXT / MD / HTML</b><small>→ DOCX, PDF, RTF, dados e planilhas</small></span>
+            </div>
+          </article>
+          <article class="privacy-card">
+            <span class="privacy-icon">⌁</span>
+            <div><p class="tool-eyebrow">PRIVACIDADE // LGPD</p><h3>Processamento efêmero</h3></div>
+            <p>O arquivo não é adicionado ao acervo, não recebe link público e não fica salvo após a resposta.</p>
+            <ul>
+              <li>Sem cadastro ou login</li>
+              <li>Resposta sem cache</li>
+              <li>Limites contra abuso</li>
+            </ul>
+          </article>
+          <p class="tool-caveat">
+            PDFs digitalizados sem camada de texto precisam de OCR. Layouts
+            complexos de PDF e DOCX podem ser simplificados. CSV e TSV exportam
+            somente a primeira aba quando houver várias.
+          </p>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="tool-footer">
+      <span>VAULTKEEP // FERRAMENTA PÚBLICA</span>
+      <span>PDF.js · docx · Mammoth · ExcelJS · processamento efêmero</span>
+    </footer>
+    <script src="/tool-header.js" defer></script>
+    <script src="/document-converter.js" defer></script>
+  </body>
+</html>

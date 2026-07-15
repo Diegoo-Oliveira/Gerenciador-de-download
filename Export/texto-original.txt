@@ -1,0 +1,9 @@
+VAULTKEEP // TESTE DE CONVERSÃO
+
+Este arquivo valida acentuação: ação, proteção, usuário e informação.
+Ele também verifica múltiplas linhas e símbolos: < > & " '.
+
+Trecho PowerShell:
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 5
+
+Status esperado: conteúdo preservado e saída somente para download.
