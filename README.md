@@ -13,7 +13,7 @@ fragmentado e retomável para arquivos grandes.
 | Administração | `/admin` | autenticado | Gerencia pastas, arquivos, permissões, uploads e compartilhamentos |
 | Editor | `/editor` | autenticado | Cria ou edita texto e código em uma página dedicada |
 | Conversor de documentos | `/tools/pdf` | público | Converte PDF, Word, planilhas, dados estruturados e texto |
-| Conversor de imagens | `/tools/images` | público | Converte, redimensiona e remove fundos uniformes |
+| Conversor de imagens | `/tools/images` | público | Converte imagens ou páginas de PDF, redimensiona e remove fundos uniformes |
 | Gerador de senha | `/tools/passwords` | público | Gera senhas e PINs no próprio navegador |
 
 ## Recursos atuais
@@ -21,7 +21,7 @@ fragmentado e retomável para arquivos grandes.
 ### Portal público
 
 - home para convidados, sem obrigar a abertura da tela de login;
-- menu compartilhado entre Arquivos, Conversor de PDF, Conversor de imagem e
+- menu compartilhado entre Arquivos, Conversor de documentos, Conversor de imagem e
   Gerador de senha;
 - listagem apenas de pastas e arquivos efetivamente publicados;
 - navegação por pastas e busca por nome dentro da pasta pública atual;
@@ -68,7 +68,7 @@ fragmentado e retomável para arquivos grandes.
 
 - conversão estrutural de PDF, DOCX, planilhas, JSON, XML, YAML, HTML,
   Markdown e texto;
-- conversão de JPG, PNG, WEBP, GIF estático, AVIF, TIFF e SVG;
+- conversão de JPG, PNG, WEBP, GIF estático, AVIF, TIFF, SVG e páginas de PDF;
 - redimensionamento, qualidade configurável e remoção de fundo uniforme;
 - geração de senha com maiúsculas, minúsculas, números, símbolos e prefixo;
 - geração de PIN numérico;
@@ -151,12 +151,12 @@ A URL temporária aparece no terminal. `Ctrl+C` encerra o túnel e o servidor. C
 O menu da home oferece ferramentas independentes, sem exigir login:
 
 - **Conversor de documentos**: recebe `.pdf`, `.docx`, `.xlsx`, `.csv`, `.tsv`, `.json`, `.xml`, `.yaml`/`.yml`, `.html`/`.htm`, `.txt` e `.md`. A saída pode ser DOCX, PDF, Markdown, TXT, HTML, RTF, XLSX, CSV, TSV, JSON, XML ou YAML, exceto quando for igual à entrada. PDF.js extrai a camada textual, Mammoth lê DOCX sem renderizar conteúdo ativo, `docx` gera documentos Word, ExcelJS preserva planilhas e parsers próprios interpretam formatos estruturados.
-- **Conversor de imagem**: recebe JPG/JPEG, PNG, WEBP, GIF estático, AVIF, TIF/TIFF ou SVG e gera JPG, PNG, WEBP, GIF estático, AVIF, TIFF ou SVG. O Sharp/libvips também permite reduzir dimensões, ajustar qualidade e remover fundos uniformes conectados às bordas. SVGs são validados antes da rasterização; a saída SVG é um contêiner autocontido com PNG incorporado, não um vetor editável.
-- **Gerador de senha**: cria senhas de 8 a 32 caracteres ou PINs de 4 a 16 dígitos. A senha pode combinar maiúsculas, minúsculas, números, símbolos e um prefixo opcional, garantindo ao menos um caractere de cada grupo selecionado. O prefixo conta no tamanho total e, por ser previsível, não é considerado na estimativa da parte aleatória. PINs formados por um único dígito repetido ou por sequências crescentes/decrescentes são recusados. A geração usa `crypto.getRandomValues` com amostragem sem viés e ocorre integralmente no navegador; nenhuma credencial é enviada, registrada ou persistida pelo VaultKeep.
+- **Conversor de imagem**: recebe JPG/JPEG, PNG, WEBP, GIF estático, AVIF, TIF/TIFF, SVG ou PDF e gera JPG, PNG, WEBP, GIF estático, AVIF, TIFF ou SVG. PDFs usam PDF.js e canvas nativo para renderizar cada página; uma página é baixada diretamente e documentos multipágina geram um ZIP com arquivos numerados. A resolução pode variar de 72 a 300 DPI. O Sharp/libvips também permite reduzir dimensões, ajustar qualidade e remover fundos uniformes conectados às bordas de imagens comuns. SVGs são validados antes da rasterização; a saída SVG é um contêiner autocontido com PNG incorporado, não um vetor editável.
+- **Gerador de senha**: cria senhas de 8 a 16 caracteres, iniciando em 8, ou PINs de 4 a 16 dígitos. A senha pode combinar maiúsculas, minúsculas, números, símbolos e um prefixo opcional, garantindo ao menos um caractere de cada grupo selecionado. O prefixo conta no tamanho total e, por ser previsível, não é considerado na estimativa da parte aleatória. PINs formados por um único dígito repetido ou por sequências crescentes/decrescentes são recusados. A geração usa `crypto.getRandomValues` com amostragem sem viés e ocorre integralmente no navegador; nenhuma credencial é enviada, registrada ou persistida pelo VaultKeep.
 
 CSV e TSV só comportam uma tabela, portanto a conversão de um documento com várias abas exporta a primeira. PDF sem camada textual, como uma digitalização, precisa de OCR e é recusado nesta versão. PDF e DOCX preservam o conteúdo e a estrutura possível, mas layouts visuais complexos podem ser simplificados. A remoção de fundo atual não é segmentação por IA e funciona melhor com estúdio, chroma key ou cores uniformes.
 
-Os conversores trabalham em memória e não gravam o arquivo em `storage`. As respostas usam `no-store`; imagens saem sem EXIF/GPS. O backend aplica rate limit por IP, filas com concorrência limitada, validação do conteúdo real e tetos de páginas, células e pixels. O gerador de senha não chama essas rotas: o processamento permanece no dispositivo. Os limites de entrada dos conversores podem ser ajustados:
+Os conversores trabalham em memória e não gravam o arquivo em `storage`. As respostas usam `no-store`; imagens saem sem EXIF/GPS. O backend aplica rate limit por IP, filas com concorrência limitada, validação do conteúdo real e tetos de páginas, células, pixels e tamanho da saída. PDF para imagem usa o mesmo limite de 10 MB do conversor de documentos; as demais imagens mantêm o limite próprio de 12 MB. O gerador de senha não chama essas rotas: o processamento permanece no dispositivo. Os limites de entrada dos conversores podem ser ajustados:
 
 ```env
 MAX_DOCUMENT_CONVERSION_MB=10

@@ -18,7 +18,7 @@
       </a>
       <nav class="tool-nav public-site-nav" aria-label="Ferramentas públicas">
         <a href="/">Arquivos</a>
-        <a href="/tools/pdf">Conversor de PDF</a>
+        <a href="/tools/pdf">Conversor de documentos</a>
         <a class="active" href="/tools/images">Conversor de imagem</a>
         <a href="/tools/passwords">Gerador de senha</a>
       </nav>
@@ -36,7 +36,7 @@
           <p class="tool-eyebrow">VAULTKEEP IMAGE LAB // IMG-01</p>
           <h1>Converta. Redimensione.<br /><em>Isole o que importa.</em></h1>
           <p>
-            Transforme imagens entre formatos modernos, incluindo SVG seguro,
+            Transforme imagens e páginas de PDF entre formatos modernos, incluindo SVG seguro,
             ajuste dimensões e remova fundos uniformes sem armazenar o arquivo no acervo.
           </p>
         </div>
@@ -46,8 +46,8 @@
       <section class="converter-layout image-layout">
         <form class="converter-card" id="imageForm">
           <div class="converter-heading">
-            <div><span>01</span><div><small>ENTRADA</small><h2>Selecione a imagem</h2></div></div>
-            <b id="imageLimit">Até 12 MB</b>
+            <div><span>01</span><div><small>ENTRADA</small><h2>Selecione a imagem ou PDF</h2></div></div>
+            <b id="imageLimit">Até 12 MB · PDF até 10 MB</b>
           </div>
 
           <label class="converter-drop image-drop" id="imageDrop" for="imageFile">
@@ -55,14 +55,14 @@
               id="imageFile"
               name="file"
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/tiff,image/svg+xml,.svg"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/tiff,image/svg+xml,application/pdf,.svg,.pdf"
               required
             />
             <img class="hidden" id="imagePreview" alt="Prévia da imagem selecionada" />
             <div id="imageDropCopy">
               <span class="drop-symbol">＋</span>
-              <strong>Solte a imagem nesta área</strong>
-              <small>JPG, PNG, WEBP, GIF, AVIF, TIFF ou SVG</small>
+              <strong>Solte a imagem ou PDF nesta área</strong>
+              <small>JPG, PNG, WEBP, GIF, AVIF, TIFF, SVG ou PDF</small>
             </div>
           </label>
 
@@ -79,9 +79,12 @@
             <label><span>Qualidade · <b id="qualityValue">82</b>%</span><input id="imageQuality" name="quality" type="range" min="20" max="100" value="82" /></label>
             <label><span>Largura máxima</span><input id="imageWidth" name="width" type="number" min="1" max="6000" placeholder="Original" /></label>
             <label><span>Altura máxima</span><input id="imageHeight" name="height" type="number" min="1" max="6000" placeholder="Original" /></label>
+            <label class="hidden" id="pdfDpiOption"><span>Resolução do PDF</span><select id="imageDpi" name="dpi">
+              <option value="72">72 DPI · tela</option><option value="150" selected>150 DPI · equilibrado</option><option value="200">200 DPI · detalhado</option><option value="300">300 DPI · impressão</option>
+            </select></label>
           </div>
 
-          <label class="background-option">
+          <label class="background-option" id="backgroundOption">
             <input id="removeBackground" name="removeBackground" type="checkbox" />
             <span class="option-check"></span>
             <span><b>Remover fundo uniforme</b><small>Detecta a cor predominante nas bordas e gera transparência.</small></span>
@@ -95,10 +98,10 @@
 
           <p class="tool-error" id="imageError" role="alert"></p>
           <button class="convert-button" id="imageSubmit" type="submit" disabled>
-            <span>Converter imagem</span><span>→</span>
+            <span>Converter para imagem</span><span>→</span>
           </button>
           <div class="conversion-progress hidden" id="imageProgress">
-            <span></span><p><b>Processando imagem...</b><small>A remoção de fundo pode levar mais tempo.</small></p>
+            <span></span><p><b>Processando arquivo...</b><small>PDFs com muitas páginas podem levar mais tempo.</small></p>
           </div>
           <div class="conversion-result hidden" id="imageResult">
             <img id="imageResultPreview" alt="Prévia da imagem convertida" />
@@ -115,13 +118,14 @@
             <span><b>GIF</b><small>Compatibilidade, paleta e transparência</small></span>
             <span><b>TIFF</b><small>Fluxos gráficos e impressão</small></span>
             <span><b>SVG</b><small>Contêiner seguro e escalável para a imagem</small></span>
+            <span><b>PDF</b><small>Uma imagem por página; várias páginas em ZIP</small></span>
           </div></article>
           <article class="privacy-card"><span class="privacy-icon">⌁</span><div><p class="tool-eyebrow">PRIVACIDADE // LGPD</p><h3>Metadados removidos</h3></div><p>A saída não conserva EXIF, GPS ou identificadores da câmera. A imagem não entra no acervo.</p><ul><li>Processamento efêmero</li><li>Validação real do formato</li><li>Limite de pixels e memória</li></ul></article>
-          <p class="tool-caveat">A remoção atual é indicada para fundos uniformes conectados às bordas. SVGs enviados são validados e rasterizados; a saída SVG é autocontida e não preserva objetos vetoriais editáveis. GIFs animados e imagens com várias páginas não são processados.</p>
+          <p class="tool-caveat">A remoção atual é indicada para fundos uniformes conectados às bordas. SVGs enviados são validados e rasterizados; a saída SVG é autocontida e não preserva objetos vetoriais editáveis. PDFs têm limite de 10 MB e geram um ZIP quando possuem várias páginas. GIFs animados e outras imagens multipágina não são processados.</p>
         </aside>
       </section>
     </main>
-    <footer class="tool-footer"><span>VAULTKEEP // FERRAMENTA PÚBLICA</span><span>Sharp · libvips · sem retenção</span></footer>
+    <footer class="tool-footer"><span>VAULTKEEP // FERRAMENTA PÚBLICA</span><span>PDF.js · Sharp · libvips · sem retenção</span></footer>
     <script src="/tool-header.js" defer></script>
     <script src="/image-converter.js" defer></script>
   </body>

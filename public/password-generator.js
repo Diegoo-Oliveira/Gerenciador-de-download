@@ -4,9 +4,17 @@ const PASSWORD_CHARACTER_GROUPS = Object.freeze({
   numbers: "0123456789",
   symbols: "!@#$%^&*()-_=+[]{};:,.?/|~",
 });
+const PASSWORD_MINIMUM_LENGTH = 8;
+const PASSWORD_MAXIMUM_LENGTH = 16;
+const PASSWORD_DEFAULT_LENGTH = 8;
 
 function generateSecurePassword(options, cryptoSource = globalThis.crypto) {
-  const length = integerBetween(options.length, 8, 32, "A senha");
+  const length = integerBetween(
+    options.length,
+    PASSWORD_MINIMUM_LENGTH,
+    PASSWORD_MAXIMUM_LENGTH,
+    "A senha",
+  );
   const prefix = validatePrefix(options.prefix || "");
   const prefixCharacters = Array.from(prefix);
   const pools = Object.entries(PASSWORD_CHARACTER_GROUPS)
@@ -165,7 +173,11 @@ function initializePasswordGenerator() {
   );
   if (!elements.passwordOutput) return;
 
-  const state = { mode: "password", passwordLength: 16, pinLength: 6 };
+  const state = {
+    mode: "password",
+    passwordLength: PASSWORD_DEFAULT_LENGTH,
+    pinLength: 6,
+  };
   const optionInputs = [
     elements.useUppercase,
     elements.useLowercase,
@@ -197,11 +209,11 @@ function initializePasswordGenerator() {
     elements.pinMode.setAttribute("aria-selected", String(pin));
     elements.passwordOptions.classList.toggle("hidden", pin);
     elements.prefixOption.classList.toggle("hidden", pin);
-    elements.passwordLength.min = pin ? "4" : "8";
-    elements.passwordLength.max = pin ? "16" : "32";
+    elements.passwordLength.min = pin ? "4" : String(PASSWORD_MINIMUM_LENGTH);
+    elements.passwordLength.max = pin ? "16" : String(PASSWORD_MAXIMUM_LENGTH);
     elements.passwordLength.value = String(pin ? state.pinLength : state.passwordLength);
-    elements.passwordLengthMinimum.textContent = pin ? "4" : "8";
-    elements.passwordLengthMaximum.textContent = pin ? "16" : "32";
+    elements.passwordLengthMinimum.textContent = pin ? "4" : String(PASSWORD_MINIMUM_LENGTH);
+    elements.passwordLengthMaximum.textContent = pin ? "16" : String(PASSWORD_MAXIMUM_LENGTH);
     elements.passwordLengthLabel.textContent = pin
       ? "Número de dígitos do PIN"
       : "Número de caracteres da senha";

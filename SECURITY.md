@@ -14,7 +14,7 @@
 - Downloads são anexos, usam `nosniff` e não ficam em cache.
 - Helmet aplica CSP, proteção contra framing e demais cabeçalhos de segurança.
 - Conversões públicas são efêmeras, possuem rate limit por IP e não entram no catálogo nem em `storage/`.
-- Documentos e imagens possuem filas separadas e limites de entrada, páginas, células, pixels e conteúdo expandido.
+- Documentos, imagens e renderização de PDF possuem filas e limites de entrada, páginas, células, pixels, memória de saída e conteúdo expandido.
 - XLSX e DOCX passam por inspeção do ZIP, limite de expansão e validação da estrutura interna para reduzir risco de bomba de descompressão e arquivos disfarçados.
 - XML recusa `DOCTYPE` e entidades personalizadas; YAML limita aliases, profundidade e quantidade de nós; HTML remove elementos ativos antes da extração.
 - HTML, XML e RTF gerados escapam o conteúdo fornecido, e DOCX é lido como texto bruto sem renderizar HTML não confiável.
@@ -22,6 +22,7 @@
 - SVG de entrada recusa scripts, eventos, entidades, `DOCTYPE`, CSS ativo, referências externas e estruturas excessivas. SVG de saída contém apenas um PNG local incorporado.
 - CSV neutraliza células iniciadas por operadores de fórmula para reduzir CSV Injection.
 - Imagens são decodificadas pelo Sharp com limite de pixels, animações são recusadas e EXIF/GPS não são copiados.
+- PDF para imagem exige extensão e assinatura coerentes, aceita no máximo o mesmo tamanho do conversor de documentos, limita DPI, páginas e pixels totais e empacota múltiplas páginas sem persistência.
 - Senhas e PINs são gerados somente no navegador com `crypto.getRandomValues`, amostragem por rejeição para evitar viés de módulo e garantia dos grupos escolhidos. O gerador não usa API, cookies nem armazenamento web para a credencial.
 
 ## Avaliação dinâmica de 15/07/2026
@@ -45,7 +46,7 @@ O teste automatizado iniciou uma instância isolada e verificou:
 - CSP, `X-Content-Type-Options` e `X-Frame-Options`;
 - conflitos de edição, hashes de chunks e HTTP Range.
 - conversões públicas sem autenticação, rejeição de origem externa e ausência de autocomplete removido;
-- JSON para XLSX, PDF para texto e DOCX, DOCX para Markdown, YAML para XML, rejeição de entidades XML, PNG para WEBP e remoção de fundo com canal alfa.
+- JSON para XLSX, PDF para texto e DOCX, PDF de uma e várias páginas para imagens, DOCX para Markdown, YAML para XML, rejeição de entidades XML, PNG para WEBP e remoção de fundo com canal alfa.
 - geração de senha e PIN com fonte criptográfica, limites e composição garantida.
 
 Comandos usados:

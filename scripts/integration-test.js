@@ -5,7 +5,9 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const argon2 = require("argon2");
 const ExcelJS = require("exceljs");
+const JSZip = require("jszip");
 const mammoth = require("mammoth");
+const PDFDocument = require("pdfkit");
 const sharp = require("sharp");
 const {
   generateSecurePassword,
@@ -38,7 +40,7 @@ function cleanup() {
 async function run() {
   for (let index = 0; index < 250; index += 1) {
     const generatedPassword = generateSecurePassword({
-      length: 32,
+      length: 16,
       prefix: "VK-",
       uppercase: true,
       lowercase: true,
@@ -46,7 +48,7 @@ async function run() {
       symbols: true,
     });
     const randomPart = generatedPassword.slice(3);
-    assert.equal(generatedPassword.length, 32);
+    assert.equal(generatedPassword.length, 16);
     assert.match(generatedPassword, /^VK-/);
     assert.match(randomPart, /[A-Z]/);
     assert.match(randomPart, /[a-z]/);
@@ -69,21 +71,33 @@ async function run() {
       }),
     /Selecione ao menos um grupo/,
   );
+  assert.throws(
+    () =>
+      generateSecurePassword({
+        length: 17,
+        prefix: "",
+        uppercase: true,
+        lowercase: true,
+        numbers: true,
+        symbols: true,
+      }),
+    /entre 8 e 16 caracteres/,
+  );
   assert.ok(
     passwordStrength({
       mode: "password",
-      length: 24,
+      length: 16,
       prefix: "VK-",
       uppercase: true,
       lowercase: true,
       numbers: true,
       symbols: true,
-    }).entropy > 100,
+    }).entropy > 80,
   );
   assert.equal(
     passwordStrength({
       mode: "password",
-      length: 32,
+      length: 16,
       prefix: "",
       uppercase: false,
       lowercase: true,
@@ -614,15 +628,18 @@ async function run() {
   const imageToolHtml = await imageToolPage.text();
   assert.match(imageToolHtml, /id="imageForm"/);
   assert.match(imageToolHtml, /image\/svg\+xml/);
+  assert.match(imageToolHtml, /application\/pdf/);
+  assert.match(imageToolHtml, /id="imageDpi"/);
+  assert.match(imageToolHtml, /Conversor de documentos/);
   assert.match(imageToolHtml, /id="toolSessionAction"/);
   assert.match(imageToolHtml, /href="\/tools\/passwords"/);
   const passwordToolPage = await fetch(`${baseUrl}/tools/passwords`);
   assert.equal(passwordToolPage.status, 200);
   const passwordToolHtml = await passwordToolPage.text();
   assert.match(passwordToolHtml, /id="passwordOutput"/);
-  assert.match(passwordToolHtml, /id="passwordLength"[^>]+min="8"[^>]+max="32"/);
+  assert.match(passwordToolHtml, /id="passwordLength"[^>]+min="8"[^>]+max="16"[^>]+value="8"/);
   assert.match(passwordToolHtml, /id="passwordLengthMinimum">8/);
-  assert.match(passwordToolHtml, /id="passwordLengthMaximum">32/);
+  assert.match(passwordToolHtml, /id="passwordLengthMaximum">16/);
   assert.doesNotMatch(passwordToolHtml, /PROCESSAMENTO LOCAL/);
   assert.match(passwordToolHtml, /id="pinMode"/);
   assert.match(passwordToolHtml, /id="passwordPrefix"/);
@@ -632,8 +649,9 @@ async function run() {
   assert.equal(passwordToolScript.status, 200);
   const passwordToolSource = await passwordToolScript.text();
   assert.match(passwordToolSource, /cryptoSource\.getRandomValues/);
-  assert.match(passwordToolSource, /passwordLengthMinimum\.textContent = pin \? "4" : "8"/);
-  assert.match(passwordToolSource, /passwordLengthMaximum\.textContent = pin \? "16" : "32"/);
+  assert.match(passwordToolSource, /PASSWORD_MINIMUM_LENGTH = 8/);
+  assert.match(passwordToolSource, /PASSWORD_MAXIMUM_LENGTH = 16/);
+  assert.match(passwordToolSource, /PASSWORD_DEFAULT_LENGTH = 8/);
   assert.doesNotMatch(passwordToolSource, /\bfetch\s*\(/);
   assert.doesNotMatch(passwordToolSource, /localStorage|sessionStorage/);
   assert.equal((await fetch(`${baseUrl}/password-generator.css`)).status, 200);
@@ -665,8 +683,11 @@ async function run() {
   const imageCapabilities = await jsonRequest("/api/tools/images/capabilities");
   assert.equal(imageCapabilities.response.status, 200);
   assert.ok(imageCapabilities.body.inputs.includes("svg"));
+  assert.ok(imageCapabilities.body.inputs.includes("pdf"));
   assert.ok(imageCapabilities.body.outputs.includes("gif"));
   assert.ok(imageCapabilities.body.outputs.includes("svg"));
+  assert.equal(imageCapabilities.body.pdfMaxBytes, capabilities.body.maxBytes);
+  assert.equal(imageCapabilities.body.pdf.multiPageOutput, "zip");
 
   const fakePdf = await convertToolFile(
     "/api/tools/documents/convert",
@@ -752,6 +773,67 @@ async function run() {
   assert.equal(generatedDocx.subarray(0, 4).toString("hex"), "504b0304");
   const docxText = await mammoth.extractRawText({ buffer: generatedDocx });
   assert.match(docxText.value, /Ana/);
+
+  const singlePagePdf = await createPdfFixture(1);
+  const pdfToPng = await convertToolFile(
+    "/api/tools/images/convert",
+    singlePagePdf,
+    "dados.pdf",
+    { format: "png", quality: "90", dpi: "150", removeBackground: "false" },
+    "application/pdf",
+  );
+  assert.equal(pdfToPng.status, 200, pdfToPng.status === 200 ? undefined : await pdfToPng.text());
+  assert.equal(pdfToPng.headers.get("x-conversion-source"), "pdf");
+  assert.equal(pdfToPng.headers.get("x-pdf-pages"), "1");
+  assert.equal(pdfToPng.headers.get("x-pdf-dpi"), "150");
+  const generatedPng = Buffer.from(await pdfToPng.arrayBuffer());
+  assert.equal((await sharp(generatedPng).metadata()).format, "png");
+
+  const multiPagePdf = await createPdfFixture(2);
+  const pdfToImagesZip = await convertToolFile(
+    "/api/tools/images/convert",
+    multiPagePdf,
+    "relatorio.pdf",
+    { format: "webp", quality: "80", dpi: "72", removeBackground: "false" },
+    "application/pdf",
+  );
+  assert.equal(
+    pdfToImagesZip.status,
+    200,
+    pdfToImagesZip.status === 200 ? undefined : await pdfToImagesZip.text(),
+  );
+  assert.match(pdfToImagesZip.headers.get("content-type"), /application\/zip/);
+  assert.equal(pdfToImagesZip.headers.get("x-pdf-pages"), "2");
+  const imageArchive = await JSZip.loadAsync(Buffer.from(await pdfToImagesZip.arrayBuffer()));
+  const imageArchiveNames = Object.keys(imageArchive.files).sort();
+  assert.deepEqual(imageArchiveNames, [
+    "relatorio-pagina-001.webp",
+    "relatorio-pagina-002.webp",
+  ]);
+  for (const name of imageArchiveNames) {
+    const pageBuffer = await imageArchive.file(name).async("nodebuffer");
+    assert.equal((await sharp(pageBuffer).metadata()).format, "webp");
+  }
+
+  const fakeImagePdf = await convertToolFile(
+    "/api/tools/images/convert",
+    Buffer.from("isto não é um pdf"),
+    "falso.pdf",
+    { format: "png", removeBackground: "false" },
+    "application/pdf",
+  );
+  assert.equal(fakeImagePdf.status, 415);
+
+  const oversizedImagePdfBuffer = Buffer.alloc(imageCapabilities.body.pdfMaxBytes + 1, 32);
+  oversizedImagePdfBuffer.write("%PDF-");
+  const oversizedImagePdf = await convertToolFile(
+    "/api/tools/images/convert",
+    oversizedImagePdfBuffer,
+    "grande.pdf",
+    { format: "png", removeBackground: "false" },
+    "application/pdf",
+  );
+  assert.equal(oversizedImagePdf.status, 413);
 
   const docxToMarkdown = await convertToolFile(
     "/api/tools/documents/convert",
@@ -971,6 +1053,24 @@ async function convertToolFile(route, buffer, filename, fields, mimeType) {
   form.append("file", new Blob([buffer], { type: mimeType }), filename);
   for (const [name, value] of Object.entries(fields)) form.append(name, value);
   return fetch(`${baseUrl}${route}`, { method: "POST", body: form });
+}
+
+async function createPdfFixture(pageCount) {
+  const chunks = [];
+  const document = new PDFDocument({ autoFirstPage: false, compress: true });
+  document.on("data", (chunk) => chunks.push(chunk));
+  const completed = new Promise((resolve, reject) => {
+    document.on("end", resolve);
+    document.on("error", reject);
+  });
+  for (let page = 1; page <= pageCount; page += 1) {
+    document.addPage({ size: "A4" });
+    document.fontSize(26).text(`VaultKeep · página ${page}`);
+    document.moveDown().fontSize(12).text("Amostra temporária para validar PDF em imagem.");
+  }
+  document.end();
+  await completed;
+  return Buffer.concat(chunks);
 }
 
 async function sendChunk(

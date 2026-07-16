@@ -54,6 +54,7 @@ storage/users.json
 Ferramentas públicas
    +-- multipart limitado -> buffer em memória -> fila do conversor
    +-- validação estrutural -> conversão -> resposta no-store
+   +-- PDF para imagem -> render por página -> imagem direta ou ZIP multipágina
    +-- nenhum arquivo ou resultado é gravado em storage/
 ```
 
@@ -71,8 +72,8 @@ Todas as rotas `/api/files`, `/api/folders`, `/api/uploads`, `/api/text` e `/api
 - `GET /api/public/:token/download`: baixa o arquivo correspondente.
 - `GET /api/tools/documents/capabilities`: informa formatos e limites de documentos;
 - `POST /api/tools/documents/convert`: converte um documento efêmero;
-- `GET /api/tools/images/capabilities`: informa formatos e limites de imagens;
-- `POST /api/tools/images/convert`: converte uma imagem efêmera.
+- `GET /api/tools/images/capabilities`: informa formatos e limites de imagens e PDF;
+- `POST /api/tools/images/convert`: converte uma imagem ou as páginas de um PDF efêmero.
 
 Cada token tem 32 bytes aleatórios codificados em Base64URL. Ele aponta para um único arquivo e não carrega identificador de pasta nem permissão de escrita. Downloads usam `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff` e `Cache-Control: no-store`.
 
@@ -96,7 +97,7 @@ Cada token tem 32 bytes aleatórios codificados em Base64URL. Ele aponta para um
 | `POST/DELETE` | `/api/files/:id/share`           | privado | Publica ou revoga um link                     |
 | `GET`         | `/api/public/:token/download`    | público | Entrega somente o arquivo compartilhado       |
 | `POST`        | `/api/tools/documents/convert`   | público | Converte documento sem persistir o upload      |
-| `POST`        | `/api/tools/images/convert`      | público | Converte imagem sem persistir o upload         |
+| `POST`        | `/api/tools/images/convert`      | público | Converte imagem ou PDF sem persistir o upload  |
 
 ## Compatibilidade com o catálogo anterior
 

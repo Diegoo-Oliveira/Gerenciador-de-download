@@ -229,7 +229,12 @@ app.post(
 );
 
 app.get("/api/tools/images/capabilities", (_req, res) => {
-  res.json(imageConverter.capabilities(MAX_IMAGE_CONVERSION_BYTES));
+  res.json(
+    imageConverter.capabilities(
+      MAX_IMAGE_CONVERSION_BYTES,
+      MAX_DOCUMENT_CONVERSION_BYTES,
+    ),
+  );
 });
 
 app.post(
@@ -246,11 +251,13 @@ app.post(
           "height",
           "removeBackground",
           "tolerance",
+          "dpi",
         ],
       });
       const result = await imageConverter.convert({
         buffer: upload.buffer,
         filename: upload.filename,
+        pdfMaxBytes: MAX_DOCUMENT_CONVERSION_BYTES,
         ...upload.fields,
       });
       return sendConversion(res, result);
@@ -818,7 +825,7 @@ async function startServer() {
       `Uploads: blocos de ${UPLOAD_CHUNK_SIZE_MB} MB, ${UPLOAD_CONCURRENCY} em paralelo, limite de ${MAX_FILE_SIZE_GB} GB.`,
     );
     console.log(
-      `Conversores públicos: documentos até ${MAX_DOCUMENT_CONVERSION_MB} MB e imagens até ${MAX_IMAGE_CONVERSION_MB} MB.`,
+      `Conversores públicos: documentos e PDFs para imagem até ${MAX_DOCUMENT_CONVERSION_MB} MB; demais imagens até ${MAX_IMAGE_CONVERSION_MB} MB.`,
     );
     console.log(
       `Login: bloqueio após ${LOGIN_MAX_ATTEMPTS_PER_IP} falhas por IP ou ${LOGIN_MAX_ATTEMPTS_PER_ACCOUNT} por conta em ${LOGIN_ATTEMPT_WINDOW_MINUTES} minutos.`,
@@ -941,6 +948,8 @@ function sendConversion(res, result) {
   });
   if (result.width) res.set("X-Image-Width", String(result.width));
   if (result.height) res.set("X-Image-Height", String(result.height));
+  if (result.pages) res.set("X-PDF-Pages", String(result.pages));
+  if (result.dpi) res.set("X-PDF-DPI", String(result.dpi));
   return res.send(result.buffer);
 }
 

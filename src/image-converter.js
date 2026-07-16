@@ -1,6 +1,8 @@
 const path = require("node:path");
 
+const { createCanvas } = require("@napi-rs/canvas");
 const { XMLParser, XMLValidator } = require("fast-xml-parser");
+const JSZip = require("jszip");
 const sharp = require("sharp");
 
 const { WorkGate } = require("./public-tool-security");
@@ -53,20 +55,39 @@ const FORBIDDEN_SVG_ELEMENTS = new Set([
 const SAFE_XML_ENTITIES = new Set(["amp", "apos", "gt", "lt", "quot"]);
 
 class ImageConverter {
-  constructor({ maxPixels = 24_000_000, maxBackgroundPixels = 6_000_000 } = {}) {
+  constructor({
+    maxPixels = 24_000_000,
+    maxBackgroundPixels = 6_000_000,
+    maxPdfPages = 100,
+    maxPdfTotalPixels = 80_000_000,
+    maxPdfOutputBytes = 160 * 1024 * 1024,
+  } = {}) {
     this.maxPixels = maxPixels;
     this.maxBackgroundPixels = maxBackgroundPixels;
+    this.maxPdfPages = maxPdfPages;
+    this.maxPdfTotalPixels = maxPdfTotalPixels;
+    this.maxPdfOutputBytes = maxPdfOutputBytes;
     this.conversionGate = new WorkGate({ concurrency: 2, maxQueue: 5 });
     this.backgroundGate = new WorkGate({ concurrency: 1, maxQueue: 3 });
+    this.pdfGate = new WorkGate({ concurrency: 1, maxQueue: 3 });
   }
 
-  capabilities(maxBytes) {
+  capabilities(maxBytes, pdfMaxBytes = maxBytes) {
     return {
       maxBytes,
+      pdfMaxBytes,
       maxPixels: this.maxPixels,
       maxBackgroundPixels: this.maxBackgroundPixels,
-      inputs: ["jpg", "jpeg", "png", "webp", "gif", "avif", "tif", "tiff", "svg"],
+      maxPdfPages: this.maxPdfPages,
+      maxPdfTotalPixels: this.maxPdfTotalPixels,
+      inputs: ["jpg", "jpeg", "png", "webp", "gif", "avif", "tif", "tiff", "svg", "pdf"],
       outputs: ["jpg", "png", "webp", "gif", "avif", "tiff", "svg"],
+      pdf: {
+        defaultDpi: 150,
+        minimumDpi: 72,
+        maximumDpi: 300,
+        multiPageOutput: "zip",
+      },
       backgroundRemoval: {
         available: true,
         method: "uniform-edge",
@@ -76,6 +97,8 @@ class ImageConverter {
   }
 
   convert(options) {
+    if (isPdfCandidate(options.buffer, options.filename))
+      return this.pdfGate.run(() => this.convertNow(options));
     const gate = parseBoolean(options.removeBackground)
       ? this.backgroundGate
       : this.conversionGate;
@@ -91,11 +114,35 @@ class ImageConverter {
     height,
     removeBackground,
     tolerance,
+    dpi,
+    pdfMaxBytes,
   }) {
     const target = normalizeFormat(format);
     if (!OUTPUT_FORMATS.has(target))
       throw toolError("Escolha JPG, PNG, WEBP, GIF, AVIF, TIFF ou SVG como saída.", 400);
     const shouldRemoveBackground = parseBoolean(removeBackground);
+    const pdfByExtension = path.extname(String(filename || "")).toLowerCase() === ".pdf";
+    const pdfByContent = hasPdfSignature(buffer);
+    if (pdfByExtension || pdfByContent) {
+      if (!pdfByExtension || !pdfByContent)
+        throw toolError("O conteúdo e a extensão do arquivo precisam corresponder a um PDF.", 415);
+      if (Number.isFinite(pdfMaxBytes) && buffer.length > pdfMaxBytes)
+        throw toolError(
+          `O PDF excede o limite de ${formatMegabytes(pdfMaxBytes)} MB.`,
+          413,
+        );
+      if (shouldRemoveBackground)
+        throw toolError("A remoção de fundo não está disponível para PDFs.", 400);
+      return this.convertPdf({
+        buffer,
+        filename,
+        target,
+        quality,
+        width,
+        height,
+        dpi,
+      });
+    }
     if (shouldRemoveBackground && !ALPHA_FORMATS.has(target))
       throw toolError(
         "Para preservar a transparência, escolha PNG, WEBP, GIF, AVIF, TIFF ou SVG.",
@@ -183,6 +230,130 @@ class ImageConverter {
       };
     } catch {
       throw toolError("Não foi possível gerar a imagem convertida.", 422);
+    }
+  }
+
+  async convertPdf({ buffer, filename, target, quality, width, height, dpi }) {
+    const requestedWidth = optionalInteger(width, 1, 6000, "largura");
+    const requestedHeight = optionalInteger(height, 1, 6000, "altura");
+    const cleanQuality = integerInRange(quality, 1, 100, 82);
+    const cleanDpi = integerInRange(dpi, 72, 300, 150);
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    let loadingTask;
+
+    try {
+      loadingTask = pdfjs.getDocument({
+        data: new Uint8Array(buffer),
+        isEvalSupported: false,
+        useSystemFonts: true,
+        verbosity: 0,
+      });
+      const document = await loadingTask.promise;
+      if (!document.numPages)
+        throw toolError("O PDF não possui páginas para converter.", 422);
+      if (document.numPages > this.maxPdfPages)
+        throw toolError(`O PDF excede o limite de ${this.maxPdfPages} páginas.`, 413);
+
+      const pages = [];
+      let totalPixels = 0;
+      let totalOutputBytes = 0;
+      for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+        const page = await document.getPage(pageNumber);
+        try {
+          const viewport = page.getViewport({ scale: cleanDpi / 72 });
+          const canvasWidth = Math.ceil(viewport.width);
+          const canvasHeight = Math.ceil(viewport.height);
+          const pagePixels = canvasWidth * canvasHeight;
+          if (!canvasWidth || !canvasHeight || pagePixels > this.maxPixels)
+            throw toolError(
+              `A página ${pageNumber} excede o limite de pixels nesta resolução. Reduza o DPI.`,
+              413,
+            );
+          totalPixels += pagePixels;
+          if (totalPixels > this.maxPdfTotalPixels)
+            throw toolError(
+              "O total de pixels do PDF excede o limite do conversor. Reduza o DPI ou divida o documento.",
+              413,
+            );
+
+          const canvas = createCanvas(canvasWidth, canvasHeight);
+          await page.render({
+            canvasContext: canvas.getContext("2d"),
+            viewport,
+            background: "#ffffff",
+          }).promise;
+          let pipeline = sharp(canvas.toBuffer("image/png"), {
+            failOn: "error",
+            limitInputPixels: this.maxPixels,
+          });
+          if (requestedWidth || requestedHeight) {
+            pipeline = pipeline.resize({
+              width: requestedWidth || undefined,
+              height: requestedHeight || undefined,
+              fit: "inside",
+              withoutEnlargement: true,
+            });
+          }
+          const output =
+            target === "svg"
+              ? await svgOutput(pipeline)
+              : await outputPipeline(pipeline, target, cleanQuality).toBuffer({
+                  resolveWithObject: true,
+                });
+          totalOutputBytes += output.data.length;
+          if (totalOutputBytes > this.maxPdfOutputBytes)
+            throw toolError(
+              "As imagens geradas excedem o limite de memória. Reduza o DPI ou divida o PDF.",
+              413,
+            );
+          pages.push({
+            buffer: output.data,
+            width: output.info.width,
+            height: output.info.height,
+          });
+        } finally {
+          page.cleanup();
+        }
+      }
+
+      if (pages.length === 1) {
+        return {
+          buffer: pages[0].buffer,
+          mimeType: MIME_TYPES[target],
+          filename: pdfPageFilename(filename, target, 1),
+          source: "pdf",
+          target,
+          width: pages[0].width,
+          height: pages[0].height,
+          pages: 1,
+          dpi: cleanDpi,
+        };
+      }
+
+      const zip = new JSZip();
+      pages.forEach((page, index) => {
+        zip.file(pdfPageFilename(filename, target, index + 1), page.buffer, {
+          binary: true,
+          compression: "STORE",
+        });
+      });
+      const archive = await zip.generateAsync({ type: "nodebuffer", streamFiles: true });
+      return {
+        buffer: archive,
+        mimeType: "application/zip",
+        filename: pdfArchiveFilename(filename, target),
+        source: "pdf",
+        target,
+        pages: pages.length,
+        dpi: cleanDpi,
+      };
+    } catch (error) {
+      if (error.status) throw error;
+      if (/password/i.test(String(error?.message || "")))
+        throw toolError("O PDF está protegido por senha e não pode ser convertido.", 422);
+      throw toolError("Não foi possível interpretar ou renderizar o PDF.", 422);
+    } finally {
+      if (loadingTask) await loadingTask.destroy();
     }
   }
 }
@@ -481,12 +652,40 @@ function optionalInteger(value, minimum, maximum, label) {
 }
 
 function outputFilename(filename, target, backgroundRemoved) {
-  const base = path
-    .basename(String(filename || "imagem"), path.extname(String(filename || "")))
-    .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "_")
-    .slice(0, 120);
+  const base = safeOutputBase(filename, "imagem");
   const suffix = backgroundRemoved ? "-sem-fundo" : "-convertida";
-  return `${base || "imagem"}${suffix}.${EXTENSIONS[target]}`;
+  return `${base}${suffix}.${EXTENSIONS[target]}`;
+}
+
+function pdfPageFilename(filename, target, pageNumber) {
+  const base = safeOutputBase(filename, "documento");
+  const page = String(pageNumber).padStart(3, "0");
+  return `${base}-pagina-${page}.${EXTENSIONS[target]}`;
+}
+
+function pdfArchiveFilename(filename, target) {
+  return `${safeOutputBase(filename, "documento")}-${EXTENSIONS[target]}-paginas.zip`;
+}
+
+function safeOutputBase(filename, fallback) {
+  return path
+    .basename(String(filename || fallback), path.extname(String(filename || "")))
+    .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "_")
+    .slice(0, 120) || fallback;
+}
+
+function hasPdfSignature(buffer) {
+  return Buffer.isBuffer(buffer) &&
+    buffer.subarray(0, Math.min(buffer.length, 1024)).includes(Buffer.from("%PDF-"));
+}
+
+function isPdfCandidate(buffer, filename) {
+  return path.extname(String(filename || "")).toLowerCase() === ".pdf" ||
+    hasPdfSignature(buffer);
+}
+
+function formatMegabytes(bytes) {
+  return Number((bytes / (1024 * 1024)).toFixed(2)).toLocaleString("pt-BR");
 }
 
 module.exports = { ImageConverter };
