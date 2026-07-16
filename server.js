@@ -39,6 +39,13 @@ const MAX_PUBLIC_TEXT_PREVIEW_MB = numberFromEnv(
 const MAX_PUBLIC_TEXT_PREVIEW_BYTES = Math.round(
   MAX_PUBLIC_TEXT_PREVIEW_MB * 1024 * 1024,
 );
+const MAX_PUBLIC_DOCUMENT_PREVIEW_MB = numberFromEnv(
+  "MAX_PUBLIC_DOCUMENT_PREVIEW_MB",
+  10,
+);
+const MAX_PUBLIC_DOCUMENT_PREVIEW_BYTES = Math.round(
+  MAX_PUBLIC_DOCUMENT_PREVIEW_MB * 1024 * 1024,
+);
 const MAX_DOCUMENT_CONVERSION_MB = numberFromEnv("MAX_DOCUMENT_CONVERSION_MB", 10);
 const MAX_IMAGE_CONVERSION_MB = numberFromEnv("MAX_IMAGE_CONVERSION_MB", 12);
 const MAX_DOCUMENT_CONVERSION_BYTES = Math.round(
@@ -85,6 +92,19 @@ const CODEMIRROR_DIR = path.join(__dirname, "node_modules", "codemirror");
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PUBLIC_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const PUBLIC_DOCUMENT_PREVIEW_EXTENSIONS = new Set([
+  "pdf",
+  "docx",
+  "xlsx",
+  "csv",
+  "tsv",
+  "json",
+  "xml",
+  "yaml",
+  "yml",
+  "html",
+  "htm",
+]);
 const SESSION_COOKIE = COOKIE_SECURE
   ? "__Host-vaultkeep_session"
   : "vaultkeep_session";
@@ -117,6 +137,11 @@ const documentToolRateLimit = createRateLimit({
 const imageToolRateLimit = createRateLimit({
   limit: 20,
   windowMs: 15 * 60 * 1000,
+});
+const publicPreviewRateLimit = createRateLimit({
+  limit: 30,
+  windowMs: 15 * 60 * 1000,
+  message: "Limite temporário de visualizações atingido. Tente novamente mais tarde.",
 });
 
 app.set("trust proxy", isLoopbackAddress);
@@ -307,66 +332,85 @@ app.get("/api/public-library/files/:id/download", (req, res, next) => {
   return deliverFile(file, res, next, "no-store");
 });
 
-app.get("/api/public-library/files/:id/content", async (req, res) => {
-  const catalog = catalogStore.read();
-  const file = catalog.files.find((item) => item.id === req.params.id);
-  if (
-    !file ||
-    !isFilePublic(catalog, file) ||
-    !fileExists(file) ||
-    file.editable === false ||
-    !isTextCandidate(file, MAX_PUBLIC_TEXT_PREVIEW_BYTES)
-  ) {
-    return res
-      .status(404)
-      .json({ error: "Arquivo público de texto não encontrado." });
-  }
-
-  let text;
-  try {
-    text = await readTextFile(
-      absoluteFilePath(file),
-      MAX_PUBLIC_TEXT_PREVIEW_BYTES,
-    );
-  } catch (error) {
-    if (error.code === "ENOENT") {
+app.get(
+  "/api/public-library/files/:id/content",
+  publicPreviewRateLimit,
+  async (req, res) => {
+    const catalog = catalogStore.read();
+    const file = catalog.files.find((item) => item.id === req.params.id);
+    const previewType = file ? publicPreviewType(file) : null;
+    if (!file || !isFilePublic(catalog, file) || !fileExists(file) || !previewType) {
       return res
         .status(404)
-        .json({ error: "Arquivo público de texto não encontrado." });
+        .json({ error: "Arquivo público não encontrado para visualização." });
     }
-    throw error;
-  }
-  const latestCatalog = catalogStore.read();
-  const latestFile = latestCatalog.files.find((item) => item.id === file.id);
-  if (
-    !latestFile ||
-    !isFilePublic(latestCatalog, latestFile) ||
-    !fileExists(latestFile) ||
-    latestFile.editable === false ||
-    !isTextCandidate(latestFile, MAX_PUBLIC_TEXT_PREVIEW_BYTES)
-  ) {
-    return res
-      .status(404)
-      .json({ error: "Arquivo público de texto não encontrado." });
-  }
-  res.set({
-    "Cache-Control": "no-store, max-age=0",
-    Pragma: "no-cache",
-    "X-Content-Type-Options": "nosniff",
-  });
-  return res.json({
-    file: {
-      id: latestFile.id,
-      name: latestFile.name,
-      size: latestFile.size,
-      mimeType: latestFile.mimeType,
-      updatedAt: latestFile.updatedAt || latestFile.createdAt,
-    },
-    content: text.content,
-    encoding: text.encoding,
-    language: detectLanguage(latestFile.name, text.content),
-  });
-});
+
+    let preview;
+    try {
+      if (previewType === "text") {
+        const text = await readTextFile(
+          absoluteFilePath(file),
+          MAX_PUBLIC_TEXT_PREVIEW_BYTES,
+        );
+        preview = {
+          previewType: "text",
+          content: text.content,
+          encoding: text.encoding,
+          language: detectLanguage(file.name, text.content),
+        };
+      } else {
+        const buffer = await readFileWithinLimit(
+          absoluteFilePath(file),
+          MAX_PUBLIC_DOCUMENT_PREVIEW_BYTES,
+        );
+        preview = {
+          previewType: "document",
+          document: await documentConverter.preview({
+            buffer,
+            filename: file.name,
+          }),
+        };
+      }
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        return res
+          .status(404)
+          .json({ error: "Arquivo público não encontrado para visualização." });
+      }
+      throw error;
+    }
+    const latestCatalog = catalogStore.read();
+    const latestFile = latestCatalog.files.find((item) => item.id === file.id);
+    if (!latestFile || !isFilePublic(latestCatalog, latestFile) || !fileExists(latestFile)) {
+      return res
+        .status(404)
+        .json({ error: "Arquivo público não encontrado para visualização." });
+    }
+    if (
+      publicPreviewType(latestFile) !== previewType ||
+      !sameFileSnapshot(file, latestFile)
+    ) {
+      return res
+        .status(409)
+        .json({ error: "O arquivo foi alterado durante a visualização. Abra-o novamente." });
+    }
+    res.set({
+      "Cache-Control": "no-store, max-age=0",
+      Pragma: "no-cache",
+      "X-Content-Type-Options": "nosniff",
+    });
+    return res.json({
+      file: {
+        id: latestFile.id,
+        name: latestFile.name,
+        size: latestFile.size,
+        mimeType: latestFile.mimeType,
+        updatedAt: latestFile.updatedAt || latestFile.createdAt,
+      },
+      ...preview,
+    });
+  },
+);
 
 app.get("/api/public/:token", (req, res) => {
   const file = findPublicFile(req.params.token);
@@ -808,6 +852,7 @@ setInterval(
     cleanupLoginFailures();
     documentToolRateLimit.cleanup();
     imageToolRateLimit.cleanup();
+    publicPreviewRateLimit.cleanup();
   },
   60 * 60 * 1000,
 ).unref();
@@ -883,6 +928,7 @@ function publicFolder(folder) {
 }
 
 function publicLibraryFile(file) {
+  const previewType = publicPreviewType(file);
   return {
     id: file.id,
     name: file.name,
@@ -891,10 +937,37 @@ function publicLibraryFile(file) {
     mimeType: file.mimeType,
     createdAt: file.createdAt,
     updatedAt: file.updatedAt,
-    previewable:
-      file.editable !== false &&
-      isTextCandidate(file, MAX_PUBLIC_TEXT_PREVIEW_BYTES),
+    previewable: Boolean(previewType),
+    previewType,
   };
+}
+
+function publicPreviewType(file) {
+  const extension = path.extname(String(file?.name || "")).slice(1).toLowerCase();
+  const size = Number(file?.size || 0);
+  if (
+    PUBLIC_DOCUMENT_PREVIEW_EXTENSIONS.has(extension) &&
+    size > 0 &&
+    size <= MAX_PUBLIC_DOCUMENT_PREVIEW_BYTES
+  ) {
+    return "document";
+  }
+  if (
+    file?.editable !== false &&
+    isTextCandidate(file, MAX_PUBLIC_TEXT_PREVIEW_BYTES)
+  ) {
+    return "text";
+  }
+  return null;
+}
+
+function sameFileSnapshot(left, right) {
+  return (
+    left.name === right.name &&
+    left.storedName === right.storedName &&
+    Number(left.size) === Number(right.size) &&
+    String(left.updatedAt || left.createdAt) === String(right.updatedAt || right.createdAt)
+  );
 }
 
 function findFile(id) {
@@ -916,6 +989,42 @@ function fileExists(file) {
 
 function absoluteFilePath(file) {
   return path.join(UPLOAD_DIR, path.basename(file.storedName));
+}
+
+async function readFileWithinLimit(filePath, maxBytes) {
+  const handle = await fs.promises.open(filePath, "r");
+  try {
+    const before = await handle.stat();
+    if (!before.isFile()) throw httpError("O item solicitado não é um arquivo.", 422);
+    if (before.size <= 0) throw httpError("O arquivo está vazio.", 422);
+    if (before.size > maxBytes)
+      throw httpError(
+        `A visualização de documentos aceita até ${formatMegabytes(maxBytes)} MB.`,
+        413,
+      );
+
+    const buffer = Buffer.alloc(before.size);
+    let offset = 0;
+    while (offset < buffer.length) {
+      const { bytesRead } = await handle.read(
+        buffer,
+        offset,
+        buffer.length - offset,
+        offset,
+      );
+      if (!bytesRead) break;
+      offset += bytesRead;
+    }
+    const after = await handle.stat();
+    if (offset !== buffer.length || after.size !== before.size || after.mtimeMs !== before.mtimeMs)
+      throw httpError(
+        "O arquivo mudou durante a leitura. Abra a visualização novamente.",
+        409,
+      );
+    return buffer;
+  } finally {
+    await handle.close();
+  }
 }
 
 function deliverFile(file, res, next, cacheControl) {
@@ -1144,6 +1253,10 @@ function safeEqual(left, right) {
 function numberFromEnv(name, fallback) {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function formatMegabytes(bytes) {
+  return Number((bytes / 1024 / 1024).toFixed(2)).toLocaleString("pt-BR");
 }
 
 function httpError(message, status) {

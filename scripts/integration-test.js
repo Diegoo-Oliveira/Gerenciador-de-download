@@ -483,8 +483,13 @@ async function run() {
   const listedPublicText = publicFolderLibrary.body.files.find(
     (file) => file.id === textId,
   );
+  const listedPublicHtml = publicFolderLibrary.body.files.find(
+    (file) => file.id === literalPublicHtml.body.file.id,
+  );
   assert.ok(listedPublicText);
   assert.equal(listedPublicText.previewable, true);
+  assert.equal(listedPublicHtml.previewable, true);
+  assert.equal(listedPublicHtml.previewType, "document");
   assert.equal(
     publicFolderLibrary.body.files.some(
       (file) => file.id === privateNested.body.file.id,
@@ -495,10 +500,10 @@ async function run() {
     `/api/public-library/files/${literalPublicHtml.body.file.id}/content`,
   );
   assert.equal(literalPreview.response.status, 200);
-  assert.equal(
-    literalPreview.body.content,
-    '<script>window.naoExecutar = true</script>\n<p>somente texto</p>\n',
-  );
+  assert.equal(literalPreview.body.previewType, "document");
+  assert.equal(literalPreview.body.document.format, "html");
+  assert.match(JSON.stringify(literalPreview.body.document), /somente texto/);
+  assert.doesNotMatch(JSON.stringify(literalPreview.body.document), /naoExecutar|<script/i);
   const nestedPrivateIdor = await fetch(
     `${baseUrl}/api/public-library/files/${privateNested.body.file.id}/download`,
   );
@@ -614,6 +619,8 @@ async function run() {
   const publicAppSource = await publicAppScript.text();
   assert.match(publicAppSource, /publicPreviewContent\.textContent = data\.content/);
   assert.doesNotMatch(publicAppSource, /publicPreviewContent\.innerHTML/);
+  assert.match(publicAppSource, /cell\.textContent = String\(value \?\? ""\)/);
+  assert.doesNotMatch(publicAppSource, /publicPreviewDocumentBody\.innerHTML/);
 
   const documentToolPage = await fetch(`${baseUrl}/tools/pdf`);
   assert.equal(documentToolPage.status, 200);
@@ -623,6 +630,7 @@ async function run() {
   assert.match(documentToolHtml, /id="toolSessionAction"/);
   assert.match(documentToolHtml, /public-header\.css\?v=4/);
   assert.match(documentToolHtml, /href="\/tools\/passwords"/);
+  assert.match(documentToolHtml, /Conversor de documentos/);
   const imageToolPage = await fetch(`${baseUrl}/tools/images`);
   assert.equal(imageToolPage.status, 200);
   const imageToolHtml = await imageToolPage.text();
@@ -726,8 +734,9 @@ async function run() {
   assert.equal(jsonToXlsx.status, 200);
   assert.match(jsonToXlsx.headers.get("content-type"), /spreadsheetml/);
   assert.match(jsonToXlsx.headers.get("cache-control"), /no-store/);
+  const generatedXlsx = Buffer.from(await jsonToXlsx.arrayBuffer());
   const convertedWorkbook = new ExcelJS.Workbook();
-  await convertedWorkbook.xlsx.load(Buffer.from(await jsonToXlsx.arrayBuffer()));
+  await convertedWorkbook.xlsx.load(generatedXlsx);
   assert.ok(convertedWorkbook.getWorksheet("clientes"));
   assert.equal(convertedWorkbook.getWorksheet("clientes").getCell("B2").value, "Ana");
 
@@ -773,6 +782,79 @@ async function run() {
   assert.equal(generatedDocx.subarray(0, 4).toString("hex"), "504b0304");
   const docxText = await mammoth.extractRawText({ buffer: generatedDocx });
   assert.match(docxText.value, /Ana/);
+
+  const publicDocumentFixtures = [
+    { name: "relatorio-publico.pdf", buffer: generatedPdf, format: "pdf", content: /Ana/ },
+    { name: "relatorio-publico.docx", buffer: generatedDocx, format: "docx", content: /Ana/ },
+    { name: "relatorio-publico.xlsx", buffer: generatedXlsx, format: "xlsx", content: /clientes|Ana/ },
+    {
+      name: "relatorio-publico.xml",
+      buffer: Buffer.from("<clientes><cliente><nome>Ana</nome><ativo>true</ativo></cliente></clientes>"),
+      format: "xml",
+      content: /Ana/,
+    },
+    {
+      name: "relatorio-extenso.csv",
+      buffer: Buffer.from(
+        ["registro", ...Array.from({ length: 12_100 }, (_, index) => `linha-${index + 1}`)].join("\n"),
+      ),
+      format: "csv",
+      content: /linha-1/,
+      truncated: true,
+    },
+  ];
+  const publicDocuments = [];
+  for (const fixture of publicDocumentFixtures) {
+    const uploaded = await uploadSmallFixture(
+      fixture.name,
+      fixture.buffer,
+      null,
+      authHeaders,
+    );
+    const published = await jsonRequest(`/api/files/${uploaded.file.id}`, {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({ visibility: "public" }),
+    });
+    assert.equal(published.response.status, 200);
+    publicDocuments.push({ ...fixture, id: uploaded.file.id });
+  }
+
+  const publicDocumentsLibrary = await jsonRequest("/api/public-library");
+  for (const fixture of publicDocuments) {
+    const listed = publicDocumentsLibrary.body.files.find((file) => file.id === fixture.id);
+    assert.ok(listed);
+    assert.equal(listed.previewable, true);
+    assert.equal(listed.previewType, "document");
+    const documentPreview = await jsonRequest(
+      `/api/public-library/files/${fixture.id}/content`,
+    );
+    assert.equal(documentPreview.response.status, 200);
+    assert.equal(documentPreview.body.previewType, "document");
+    assert.equal(documentPreview.body.document.format, fixture.format);
+    assert.ok(documentPreview.body.document.sheets.length > 0);
+    assert.match(JSON.stringify(documentPreview.body.document), fixture.content);
+    if (fixture.truncated) assert.equal(documentPreview.body.document.truncated, true);
+    assert.match(documentPreview.response.headers.get("cache-control"), /no-store/);
+  }
+
+  const privateDocument = await jsonRequest(`/api/files/${publicDocuments[1].id}`, {
+    method: "PATCH",
+    headers: authHeaders,
+    body: JSON.stringify({ visibility: "private" }),
+  });
+  assert.equal(privateDocument.response.status, 200);
+  assert.equal(
+    (await fetch(`${baseUrl}/api/public-library/files/${publicDocuments[1].id}/content`)).status,
+    404,
+  );
+  for (const fixture of publicDocuments) {
+    const deleted = await fetch(`${baseUrl}/api/files/${fixture.id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+    assert.equal(deleted.status, 204);
+  }
 
   const singlePagePdf = await createPdfFixture(1);
   const pdfToPng = await convertToolFile(

@@ -67,9 +67,16 @@ const MIME_TYPES = {
 };
 
 class DocumentConverter {
-  constructor({ maxPages = 100, maxCells = 120_000 } = {}) {
+  constructor({
+    maxPages = 100,
+    maxCells = 120_000,
+    maxPreviewCells = 12_000,
+    maxPreviewCharacters = 1_000_000,
+  } = {}) {
     this.maxPages = maxPages;
     this.maxCells = maxCells;
+    this.maxPreviewCells = maxPreviewCells;
+    this.maxPreviewCharacters = maxPreviewCharacters;
     this.gate = new WorkGate({ concurrency: 2, maxQueue: 6 });
   }
 
@@ -90,6 +97,10 @@ class DocumentConverter {
 
   convert(options) {
     return this.gate.run(() => this.convertNow(options));
+  }
+
+  preview(options) {
+    return this.gate.run(() => this.previewNow(options));
   }
 
   async convertNow({ buffer, filename, target }) {
@@ -116,6 +127,22 @@ class DocumentConverter {
       source,
       target: cleanTarget,
     };
+  }
+
+  async previewNow({ buffer, filename }) {
+    const source = normalizeFormat(extensionOf(filename));
+    if (!INPUT_FORMATS.has(source))
+      throw toolError(
+        "Este formato ainda não possui visualização pública.",
+        415,
+      );
+    validateSignature(buffer, source);
+    const model = await this.readSource(buffer, source, filename);
+    enforceModelLimits(model, this.maxCells);
+    return documentPreviewModel(model, {
+      maxCells: this.maxPreviewCells,
+      maxCharacters: this.maxPreviewCharacters,
+    });
   }
 
   async readSource(buffer, source, filename) {
@@ -833,6 +860,101 @@ function textFlowInfo(model, sheet) {
   if (model.source === "html" && sheet.name === "Conteúdo HTML")
     return { textIndex, pageIndex: -1, typeIndex: headers.indexOf("tipo") };
   return null;
+}
+
+function documentPreviewModel(model, { maxCells, maxCharacters }) {
+  const budget = {
+    cells: 0,
+    characters: 0,
+    maxCells,
+    maxCharacters,
+    truncated: false,
+  };
+  const sheets = [];
+
+  for (const sheet of model.sheets) {
+    if (previewBudgetExhausted(budget)) {
+      budget.truncated = true;
+      break;
+    }
+    const flow = textFlowInfo(model, sheet);
+    const previewSheet = flow
+      ? previewFlowSheet(sheet, flow, budget)
+      : previewTableSheet(sheet, budget);
+    sheets.push({
+      name: String(sheet.name || `Seção ${sheets.length + 1}`).slice(0, 160),
+      ...previewSheet,
+    });
+  }
+  if (sheets.length < model.sheets.length) budget.truncated = true;
+
+  return {
+    format: model.source,
+    sheetCount: model.sheets.length,
+    sheets,
+    truncated: budget.truncated,
+    limits: {
+      cells: maxCells,
+      characters: maxCharacters,
+    },
+  };
+}
+
+function previewFlowSheet(sheet, flow, budget) {
+  const entries = [];
+  const sourceRows = sheet.rows.slice(1);
+  for (const row of sourceRows) {
+    if (budget.cells + 3 > budget.maxCells || previewBudgetExhausted(budget)) {
+      budget.truncated = true;
+      break;
+    }
+    const page = flow.pageIndex >= 0 ? previewCell(row[flow.pageIndex], budget) : "";
+    const type = flow.typeIndex >= 0 ? previewCell(row[flow.typeIndex], budget) : "";
+    const text = previewCell(row[flow.textIndex], budget);
+    entries.push({ page, type, text });
+  }
+  if (entries.length < sourceRows.length) budget.truncated = true;
+  return { kind: "flow", entries };
+}
+
+function previewTableSheet(sheet, budget) {
+  const rows = [];
+  for (const sourceRow of sheet.rows) {
+    if (previewBudgetExhausted(budget)) {
+      budget.truncated = true;
+      break;
+    }
+    const row = [];
+    for (const cell of sourceRow) {
+      if (budget.cells >= budget.maxCells || previewBudgetExhausted(budget)) {
+        budget.truncated = true;
+        break;
+      }
+      row.push(previewCell(cell, budget));
+    }
+    rows.push(row);
+    if (row.length < sourceRow.length) break;
+  }
+  if (rows.length < sheet.rows.length) budget.truncated = true;
+  return { kind: "table", rows };
+}
+
+function previewCell(value, budget) {
+  budget.cells += 1;
+  const text = displayCell(value);
+  const remaining = Math.max(0, budget.maxCharacters - budget.characters);
+  if (text.length <= remaining) {
+    budget.characters += text.length;
+    return text;
+  }
+  budget.characters = budget.maxCharacters;
+  budget.truncated = true;
+  if (!remaining) return "";
+  return `${text.slice(0, Math.max(0, remaining - 1))}…`;
+}
+
+function previewBudgetExhausted(budget) {
+  return budget.cells >= budget.maxCells || budget.characters >= budget.maxCharacters;
 }
 
 function htmlHeadingLevel(tag) {

@@ -18,7 +18,8 @@
 - XLSX e DOCX passam por inspeção do ZIP, limite de expansão e validação da estrutura interna para reduzir risco de bomba de descompressão e arquivos disfarçados.
 - XML recusa `DOCTYPE` e entidades personalizadas; YAML limita aliases, profundidade e quantidade de nós; HTML remove elementos ativos antes da extração.
 - HTML, XML e RTF gerados escapam o conteúdo fornecido, e DOCX é lido como texto bruto sem renderizar HTML não confiável.
-- A prévia pública de texto revalida arquivo e pastas no backend antes e depois da leitura, limita a resposta a 1 MB por padrão e insere o conteúdo no navegador com `textContent`.
+- A prévia pública revalida arquivo e pastas no backend antes e depois da leitura. Texto puro é limitado a 1 MB; documentos estruturados, a 10 MB, 12 mil células e 1 milhão de caracteres por padrão.
+- PDF, DOCX, XLSX, CSV, TSV, JSON, XML, YAML e HTML públicos passam pelos mesmos parsers seguros do conversor, em fila e com rate limit. Células e parágrafos são inseridos com `textContent`, sem executar HTML, macros, fórmulas ou links do documento.
 - SVG de entrada recusa scripts, eventos, entidades, `DOCTYPE`, CSS ativo, referências externas e estruturas excessivas. SVG de saída contém apenas um PNG local incorporado.
 - CSV neutraliza células iniciadas por operadores de fórmula para reduzir CSV Injection.
 - Imagens são decodificadas pelo Sharp com limite de pixels, animações são recusadas e EXIF/GPS não são copiados.
@@ -46,7 +47,7 @@ O teste automatizado iniciou uma instância isolada e verificou:
 - CSP, `X-Content-Type-Options` e `X-Frame-Options`;
 - conflitos de edição, hashes de chunks e HTTP Range.
 - conversões públicas sem autenticação, rejeição de origem externa e ausência de autocomplete removido;
-- JSON para XLSX, PDF para texto e DOCX, PDF de uma e várias páginas para imagens, DOCX para Markdown, YAML para XML, rejeição de entidades XML, PNG para WEBP e remoção de fundo com canal alfa.
+- JSON para XLSX, PDF para texto e DOCX, PDF de uma e várias páginas para imagens, prévia pública de PDF/DOCX/XLSX/XML, DOCX para Markdown, YAML para XML, rejeição de entidades XML, PNG para WEBP e remoção de fundo com canal alfa.
 - geração de senha e PIN com fonte criptográfica, limites e composição garantida.
 
 Comandos usados:

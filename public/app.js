@@ -81,6 +81,9 @@ const elements = Object.fromEntries(
     "publicPreviewStatus",
     "publicPreviewCode",
     "publicPreviewContent",
+    "publicPreviewDocument",
+    "publicPreviewTabs",
+    "publicPreviewDocumentBody",
     "publicPreviewDownload",
     "publicPreviewClose",
     "operatorName",
@@ -195,7 +198,7 @@ function bindEvents() {
     }
     if (event.key !== "Escape") return;
     if (!elements.publicPreviewModal.classList.contains("hidden")) {
-      closePublicTextPreview();
+      closePublicPreview();
       return;
     }
     document
@@ -301,13 +304,13 @@ function renderPublicLibrary() {
     card
       .querySelector(".public-preview-button")
       ?.addEventListener("click", (event) =>
-        openPublicTextPreview(file, event.currentTarget),
+        openPublicPreview(file, event.currentTarget),
       );
     elements.publicLibraryList.appendChild(card);
   });
 }
 
-async function openPublicTextPreview(file, trigger) {
+async function openPublicPreview(file, trigger) {
   state.publicPreviewController?.abort();
   state.publicPreviewTrigger = trigger;
   const controller = new AbortController();
@@ -316,7 +319,7 @@ async function openPublicTextPreview(file, trigger) {
   elements.publicPreviewTitle.textContent = file.name;
   elements.publicPreviewMeta.textContent = `${formatBytes(file.size)} · validando conteúdo`;
   elements.publicPreviewStatus.textContent = "Carregando visualização...";
-  elements.publicPreviewContent.textContent = "";
+  resetPublicPreviewPanels();
   elements.publicPreviewDownload.href = `/api/public-library/files/${encodeURIComponent(file.id)}/download`;
   elements.publicPreviewModal.classList.remove("hidden");
   setTimeout(() => elements.publicPreviewClose.focus(), 0);
@@ -328,26 +331,142 @@ async function openPublicTextPreview(file, trigger) {
     );
     if (state.publicPreviewController !== controller) return;
     elements.publicPreviewTitle.textContent = data.file.name;
-    elements.publicPreviewMeta.textContent = `${publicLanguageLabel(data.language)} · ${formatBytes(data.file.size)} · ${String(data.encoding || "utf8").toUpperCase()}`;
-    elements.publicPreviewContent.textContent = data.content;
-    elements.publicPreviewStatus.textContent =
-      "Conteúdo carregado em modo somente leitura.";
+    if (data.previewType === "document") {
+      renderPublicDocumentPreview(data.document);
+      const sections = Number(data.document.sheetCount || data.document.sheets?.length || 0);
+      elements.publicPreviewMeta.textContent = `${publicDocumentFormatLabel(data.document.format)} · ${formatBytes(data.file.size)} · ${sections} ${sections === 1 ? "seção" : "seções"}`;
+      elements.publicPreviewStatus.textContent = data.document.truncated
+        ? "Visualização parcial por segurança. O arquivo completo continua disponível para download."
+        : "Documento carregado em modo somente leitura.";
+    } else {
+      elements.publicPreviewCode.classList.remove("hidden");
+      elements.publicPreviewMeta.textContent = `${publicLanguageLabel(data.language)} · ${formatBytes(data.file.size)} · ${String(data.encoding || "utf8").toUpperCase()}`;
+      elements.publicPreviewContent.textContent = data.content;
+      elements.publicPreviewStatus.textContent =
+        "Conteúdo carregado em modo somente leitura.";
+    }
   } catch (error) {
     if (error.name === "AbortError") return;
+    resetPublicPreviewPanels();
+    elements.publicPreviewCode.classList.remove("hidden");
     elements.publicPreviewStatus.textContent = error.message;
     elements.publicPreviewContent.textContent =
       "Não foi possível exibir este arquivo. O download continua disponível.";
   }
 }
 
-function closePublicTextPreview() {
+function closePublicPreview() {
   state.publicPreviewController?.abort();
   state.publicPreviewController = null;
   elements.publicPreviewModal.classList.add("hidden");
-  elements.publicPreviewContent.textContent = "";
+  resetPublicPreviewPanels();
   const trigger = state.publicPreviewTrigger;
   state.publicPreviewTrigger = null;
   if (trigger?.isConnected) setTimeout(() => trigger.focus(), 0);
+}
+
+function resetPublicPreviewPanels() {
+  elements.publicPreviewContent.textContent = "";
+  elements.publicPreviewTabs.replaceChildren();
+  elements.publicPreviewDocumentBody.replaceChildren();
+  elements.publicPreviewCode.classList.add("hidden");
+  elements.publicPreviewDocument.classList.add("hidden");
+}
+
+function renderPublicDocumentPreview(documentPreview) {
+  const sheets = Array.isArray(documentPreview?.sheets)
+    ? documentPreview.sheets
+    : [];
+  elements.publicPreviewDocument.classList.remove("hidden");
+  elements.publicPreviewTabs.replaceChildren();
+  elements.publicPreviewDocumentBody.replaceChildren();
+  if (!sheets.length) {
+    const empty = document.createElement("p");
+    empty.className = "public-preview-empty";
+    empty.textContent = "Nenhum conteúdo legível foi encontrado neste documento.";
+    elements.publicPreviewDocumentBody.appendChild(empty);
+    return;
+  }
+
+  const selectSheet = (selectedIndex) => {
+    [...elements.publicPreviewTabs.children].forEach((button, index) => {
+      const selected = index === selectedIndex;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", String(selected));
+    });
+    renderPublicPreviewSheet(sheets[selectedIndex]);
+  };
+
+  sheets.forEach((sheet, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("role", "tab");
+    button.textContent = String(sheet.name || `Seção ${index + 1}`);
+    button.addEventListener("click", () => selectSheet(index));
+    elements.publicPreviewTabs.appendChild(button);
+  });
+  selectSheet(0);
+}
+
+function renderPublicPreviewSheet(sheet) {
+  elements.publicPreviewDocumentBody.replaceChildren();
+  if (sheet?.kind === "flow") {
+    const flow = document.createElement("article");
+    flow.className = "public-preview-flow";
+    let currentPage = null;
+    (sheet.entries || []).forEach((entry) => {
+      const page = String(entry.page || "");
+      if (page && page !== currentPage) {
+        currentPage = page;
+        const pageHeading = document.createElement("h3");
+        pageHeading.textContent = `Página ${page}`;
+        flow.appendChild(pageHeading);
+      }
+      const type = String(entry.type || "").toLowerCase();
+      const tag = /^h[1-6]$/.test(type)
+        ? type
+        : type === "pre" || type === "blockquote"
+          ? type
+          : "p";
+      const line = document.createElement(tag);
+      line.textContent = String(entry.text || "");
+      flow.appendChild(line);
+    });
+    elements.publicPreviewDocumentBody.appendChild(flow);
+    return;
+  }
+
+  const scroller = document.createElement("div");
+  scroller.className = "public-preview-table-scroll";
+  const table = document.createElement("table");
+  const body = document.createElement("tbody");
+  (sheet?.rows || []).forEach((row, rowIndex) => {
+    const tableRow = document.createElement("tr");
+    (row || []).forEach((value) => {
+      const cell = document.createElement(rowIndex === 0 ? "th" : "td");
+      cell.textContent = String(value ?? "");
+      tableRow.appendChild(cell);
+    });
+    body.appendChild(tableRow);
+  });
+  table.appendChild(body);
+  scroller.appendChild(table);
+  elements.publicPreviewDocumentBody.appendChild(scroller);
+}
+
+function publicDocumentFormatLabel(format) {
+  const labels = {
+    pdf: "Documento PDF",
+    docx: "Documento Word",
+    xlsx: "Planilha Excel",
+    csv: "Tabela CSV",
+    tsv: "Tabela TSV",
+    json: "Dados JSON",
+    xml: "Dados XML",
+    yaml: "Dados YAML",
+    html: "Documento HTML",
+  };
+  return labels[String(format || "").toLowerCase()] || "Documento";
 }
 
 function trapPublicPreviewFocus(event) {
@@ -978,7 +1097,7 @@ async function copyShareUrl() {
 
 function closeNamedModal(name) {
   if (name === "upload") return closeUpload();
-  if (name === "publicPreview") return closePublicTextPreview();
+  if (name === "publicPreview") return closePublicPreview();
   const modal = document.querySelector(`#${name}Modal`);
   modal?.classList.add("hidden");
 }

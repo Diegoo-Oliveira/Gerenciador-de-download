@@ -38,7 +38,11 @@ class WorkGate {
   }
 }
 
-function createRateLimit({ limit, windowMs }) {
+function createRateLimit({
+  limit,
+  windowMs,
+  message = "Limite temporário de conversões atingido. Tente novamente mais tarde.",
+}) {
   const buckets = new Map();
   const middleware = (req, res, next) => {
     const now = Date.now();
@@ -55,7 +59,7 @@ function createRateLimit({ limit, windowMs }) {
       );
       res.set("Retry-After", String(retryAfter));
       return res.status(429).json({
-        error: "Limite temporário de conversões atingido. Tente novamente mais tarde.",
+        error: message,
       });
     }
     recent.push(now);

@@ -26,8 +26,10 @@ fragmentado e retomável para arquivos grandes.
 - listagem apenas de pastas e arquivos efetivamente publicados;
 - navegação por pastas e busca por nome dentro da pasta pública atual;
 - download individual sem permissão de alteração;
-- visualização em popup, somente leitura, para arquivos de texto públicos de
-  até 1 MB por padrão;
+- visualização em popup, somente leitura, para arquivos de texto e código
+  públicos de até 1 MB por padrão;
+- visualização estruturada de PDF, DOCX, XLSX, CSV, TSV, JSON, XML, YAML e
+  HTML públicos de até 10 MB por padrão, com páginas, abas e tabelas;
 - cabeçalho que reconhece a sessão atual e troca **Login** por **Administrar**;
 - layout responsivo para desktop, tablet e celular.
 
@@ -162,6 +164,7 @@ Os conversores trabalham em memória e não gravam o arquivo em `storage`. As re
 MAX_DOCUMENT_CONVERSION_MB=10
 MAX_IMAGE_CONVERSION_MB=12
 MAX_PUBLIC_TEXT_PREVIEW_MB=1
+MAX_PUBLIC_DOCUMENT_PREVIEW_MB=10
 ```
 
 ## Pastas, arquivos privados e publicação
@@ -173,7 +176,9 @@ armazenado. Downloads não são contados nem registrados para essa estatística.
 
 Para um arquivo de uma subpasta aparecer na home, o arquivo e todas as pastas acima dele precisam estar marcados como públicos. Publicar uma pasta não publica automaticamente o seu conteúdo, evitando exposição acidental em massa. A área administrativa exibe selos, avisos e seletores para esse estado.
 
-Arquivos públicos reconhecidos como texto exibem uma ação de visualização. O popup é somente leitura, carrega o conteúdo por uma rota pública que revalida a permissão no backend e usa o limite `MAX_PUBLIC_TEXT_PREVIEW_MB`. Arquivos maiores continuam disponíveis apenas para download.
+Arquivos públicos reconhecidos como texto ou documento exibem uma ação de visualização. O popup é somente leitura e carrega o conteúdo por uma rota pública que revalida a permissão antes e depois do processamento. TXT, Markdown e código usam `MAX_PUBLIC_TEXT_PREVIEW_MB`; PDF, DOCX, XLSX, CSV, TSV, JSON, XML, YAML e HTML usam `MAX_PUBLIC_DOCUMENT_PREVIEW_MB`. Planilhas exibem abas e tabelas, enquanto PDF e Word exibem o fluxo textual. Arquivos acima do limite continuam disponíveis apenas para download.
+
+A visualização estruturada é limitada a 12 mil células e 1 milhão de caracteres na resposta ao navegador. Quando o documento ultrapassa esse volume, o popup informa que a prévia é parcial sem modificar o download original. PDFs digitalizados sem camada textual ainda precisam de OCR.
 
 O link público aleatório continua disponível como uma segunda forma de compartilhamento. Ele libera somente o arquivo selecionado para quem possuir a URL, mesmo sem listar o arquivo na home.
 

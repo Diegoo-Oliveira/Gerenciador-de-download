@@ -66,6 +66,7 @@ Todas as rotas `/api/files`, `/api/folders`, `/api/uploads`, `/api/text` e `/api
 
 - `GET /api/public-library`: lista uma pasta efetivamente pública;
 - `GET /api/public-library/files/:id/download`: baixa um arquivo efetivamente público;
+- `GET /api/public-library/files/:id/content`: entrega texto ou uma prévia estruturada de documento após revalidar a publicação;
 
 - `GET /s/:token`: abre a página pública;
 - `GET /api/public/:token`: retorna metadados mínimos;
